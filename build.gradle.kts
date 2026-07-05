@@ -1,0 +1,65 @@
+plugins {
+    id("org.springframework.boot") version "3.5.15"
+    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("jvm") version "2.0.21"
+    kotlin("plugin.spring") version "2.0.21"
+    kotlin("plugin.jpa") version "2.0.21"
+}
+
+group = "com.example.yakallim"
+version = "0.0.1-SNAPSHOT"
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+val onnxruntimeVersion: String by project
+val firebaseAdminVersion: String by project
+val guavaVersion: String by project
+val protobufVersion: String by project
+val grpcVersion: String by project
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation("com.microsoft.onnxruntime:onnxruntime:$onnxruntimeVersion")
+    implementation("com.google.firebase:firebase-admin:$firebaseAdminVersion")
+
+    constraints {
+        implementation("com.google.guava:guava:$guavaVersion")
+        implementation("com.google.protobuf:protobuf-java:$protobufVersion")
+        implementation("io.grpc:grpc-netty-shaded:$grpcVersion")
+    }
+
+    runtimeOnly("com.h2database:h2")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+kotlin {
+    jvmToolchain(17)
+
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+allOpen {
+    annotation("javax.persistence.Entity")
+    annotation("javax.persistence.Embeddable")
+    annotation("javax.persistence.MappedSuperclass")
+    annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.Embeddable")
+    annotation("jakarta.persistence.MappedSuperclass")
+}

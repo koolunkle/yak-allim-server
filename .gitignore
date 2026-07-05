@@ -1,0 +1,91 @@
+# -------------------------------------------------------------------------
+# Credentials & Private Keys
+# -------------------------------------------------------------------------
+# Firebase Service Account Private Key for Cloud Messaging (FCM)
+yak-allim-firebase-key.json
+
+
+# -------------------------------------------------------------------------
+# Local Machine Configuration
+# -------------------------------------------------------------------------
+# Local environment and Gradle NDK/SDK settings
+local.properties
+
+
+# -------------------------------------------------------------------------
+# Dynamic Outputs & Temporary Uploads
+# -------------------------------------------------------------------------
+# Temporary files and directories uploaded during OCR analysis
+outputs/
+
+
+# -------------------------------------------------------------------------
+# Large Model Assets (Inference Engines)
+# -------------------------------------------------------------------------
+# Large binary ONNX models (e.g., PP-OCRv4 detection/recognition models)
+*.onnx
+
+
+# -------------------------------------------------------------------------
+# Databases (H2 Files)
+# -------------------------------------------------------------------------
+# Local file-based H2 database records (if used in the future)
+*.mv.db
+*.trace.db
+
+
+# -------------------------------------------------------------------------
+# Gradle Build & Compiler Outputs
+# -------------------------------------------------------------------------
+HELP.md
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Kotlin compiler cache
+.kotlin/
+
+
+# -------------------------------------------------------------------------
+# IDE Settings & Project Configurations
+# -------------------------------------------------------------------------
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# STS / Eclipse IDE
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# Visual Studio Code
+.vscode/
+
+# NetBeans IDE
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+
+# -------------------------------------------------------------------------
+# OS Specific Metadata Files
+# -------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
