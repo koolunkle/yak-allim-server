@@ -2,6 +2,7 @@ package com.example.yakallim.ocr.presentation
 
 import com.example.yakallim.ocr.application.OcrService
 import com.example.yakallim.ocr.presentation.dto.OcrJobResponse
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -16,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile
 class OcrController(
     private val ocrService: OcrService
 ) {
-    @PostMapping("/enqueue")
+    @PostMapping("/enqueue", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun enqueueJob(
         @RequestParam("file") file: MultipartFile,
         @RequestParam("fcmToken", required = false) fcmToken: String?,

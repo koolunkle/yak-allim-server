@@ -24,6 +24,7 @@ val firebaseAdminVersion: String by project
 val guavaVersion: String by project
 val protobufVersion: String by project
 val grpcVersion: String by project
+val springdocVersion: String by project
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -32,6 +33,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("com.microsoft.onnxruntime:onnxruntime:$onnxruntimeVersion")
     implementation("com.google.firebase:firebase-admin:$firebaseAdminVersion")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
 
     constraints {
         implementation("com.google.guava:guava:$guavaVersion")
