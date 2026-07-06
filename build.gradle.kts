@@ -29,6 +29,7 @@ val springdocVersion: String by project
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("com.microsoft.onnxruntime:onnxruntime:$onnxruntimeVersion")
@@ -44,6 +45,10 @@ dependencies {
     runtimeOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+configurations.all {
+    exclude(group = "commons-logging", module = "commons-logging")
 }
 
 kotlin {
