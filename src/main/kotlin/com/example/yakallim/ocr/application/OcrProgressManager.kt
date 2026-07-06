@@ -119,13 +119,11 @@ class OcrProgressManager(
             try {
                 sendToEmitter(emitter, cached)
                 if (cached.isFinished) {
-                    emitter.complete()
+                    emitter.completeSafely()
                     removeEmitter(jobId, emitter)
                 }
             } catch (_: Exception) {
-                try {
-                    emitter.complete()
-                } catch (_: Exception) {}
+                emitter.completeSafely()
                 removeEmitter(jobId, emitter)
             }
         }
@@ -160,13 +158,11 @@ class OcrProgressManager(
             try {
                 sendToEmitter(emitter, payload)
                 if (isFinished) {
-                    emitter.complete()
+                    emitter.completeSafely()
                     failedEmitters.add(emitter)
                 }
             } catch (_: Exception) {
-                try {
-                    emitter.complete()
-                } catch (_: Exception) {}
+                emitter.completeSafely()
                 failedEmitters.add(emitter)
             }
         }
@@ -193,7 +189,7 @@ class OcrProgressManager(
                 try {
                     emitter.send(SseEmitter.event().comment("keep-alive"))
                 } catch (_: Exception) {
-                    emitter.complete()
+                    emitter.completeSafely()
                     failedEmitters.add(emitter)
                 }
             }
@@ -222,4 +218,8 @@ class OcrProgressManager(
             emittersMap.remove(jobId)
         }
     }
+}
+
+private fun SseEmitter.completeSafely() {
+    runCatching { this.complete() }
 }

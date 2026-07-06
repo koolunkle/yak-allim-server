@@ -11,11 +11,10 @@ class InMemoryOcrJobRepository : OcrJobRepository {
 
     private val jobRegistry = ConcurrentHashMap<String, OcrJobResponse>()
 
-    override fun registerJob(jobId: String): OcrJobResponse {
-        val job = OcrJobResponse(jobId = jobId, status = OcrJobResponse.JobStatus.ACCEPTED)
-        jobRegistry[jobId] = job
-        return job
-    }
+    override fun registerJob(jobId: String): OcrJobResponse =
+        OcrJobResponse(jobId = jobId, status = OcrJobResponse.JobStatus.ACCEPTED).also {
+            jobRegistry[jobId] = it
+        }
 
     override fun updateToProcessing(jobId: String) {
         updateJobStatus(jobId, OcrJobResponse.JobStatus.PROCESSING)

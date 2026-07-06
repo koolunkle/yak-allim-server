@@ -20,17 +20,18 @@ class FirebaseMessagingNotificationClient(
             return
         }
 
-        try {
+        runCatching {
             val notification = Notification.builder().setTitle(title).setBody(body).build()
-            val messageBuilder = Message.builder().setToken(token).setNotification(notification)
-            data.forEach { (key, value) ->
-                messageBuilder.putData(key, value)
-            }
-            val message = messageBuilder.build()
+            val message = Message.builder().apply {
+                setToken(token)
+                setNotification(notification)
+                putAllData(data)
+            }.build()
 
             firebaseMessaging.send(message)
+        }.onSuccess {
             log.info("FCM 전송 완료: [제목] {}", title)
-        } catch (e: Exception) {
+        }.onFailure { e ->
             log.error("FCM 전송 실패: [제목] {}, [토큰] {}", title, token, e)
         }
     }

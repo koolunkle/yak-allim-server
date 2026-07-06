@@ -22,7 +22,6 @@ import java.awt.Color
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferInt
-import java.io.IOException
 import java.io.InputStream
 import java.nio.FloatBuffer
 import javax.imageio.ImageIO
@@ -74,7 +73,7 @@ class OcrEngine(
 
     override fun runOcr(imageStream: InputStream, jobId: String?): List<TextBlock> {
         if (!isReady) return emptyList()
-        try {
+        return runCatching {
             val sourceImage = ImageIO.read(imageStream) ?: throw IllegalArgumentException("유효하지 않은 이미지 스트림입니다.")
             
             if (jobId != null) {
@@ -82,15 +81,12 @@ class OcrEngine(
             }
             
             val detectedTextRegions = detectRegions(sourceImage)
-            val recognitionInputs = mutableListOf<RecognitionInput>()
-
-            for (regionCoordinates in detectedTextRegions) {
+            val recognitionInputs = detectedTextRegions.flatMap { regionCoordinates ->
                 val croppedRegionImage = cropRegion(sourceImage, regionCoordinates)
                 val segmentedColumns = splitSegments(croppedRegionImage)
-
                 val regionBoundingBox = BoundingBox.from(regionCoordinates)
 
-                for (column in segmentedColumns) {
+                segmentedColumns.map { column ->
                     val segmentWidth = column.image.width
                     val segmentCoordinateBounds = listOf(
                         TextBlock.Coordinate(regionBoundingBox.minX + column.offsetX, regionBoundingBox.minY),
@@ -98,7 +94,7 @@ class OcrEngine(
                         TextBlock.Coordinate(regionBoundingBox.minX + column.offsetX + segmentWidth, regionBoundingBox.maxY),
                         TextBlock.Coordinate(regionBoundingBox.minX + column.offsetX, regionBoundingBox.maxY)
                     )
-                    recognitionInputs.add(RecognitionInput(column.image, segmentCoordinateBounds))
+                    RecognitionInput(column.image, segmentCoordinateBounds)
                 }
             }
             
@@ -106,7 +102,7 @@ class OcrEngine(
                 ocrProgressManager.publishProgress(jobId, PipelineStep.TEXT_RECOGNITION)
             }
 
-            return runBlocking(Dispatchers.Default) {
+            runBlocking(Dispatchers.Default) {
                 recognitionInputs.map { input ->
                     async {
                         val recognitionResult = recognize(input.image)
@@ -116,15 +112,16 @@ class OcrEngine(
                     }
                 }.awaitAll().filterNotNull()
             }
-        } catch (exception: Exception) {
+        }.onFailure { exception ->
             log.error("OCR 분석 처리 실패", exception)
+        }.getOrElse { exception ->
             throw RuntimeException("OCR 분석 처리 실패", exception)
         }
     }
 
     @PostConstruct
     fun initEngine() {
-        try {
+        runCatching {
             env = OrtEnvironment.getEnvironment()
             loadVocab()
 
@@ -143,13 +140,13 @@ class OcrEngine(
                 }
                 isReady = true
             }
-        } catch (exception: Exception) {
+        }.onFailure { exception ->
             log.error("ONNX OCR 엔진 초기화 실패", exception)
         }
     }
 
     private fun loadVocab() {
-        try {
+        runCatching {
             val dictionaryResource = resourceLoader.getResource(ocrProperties.engine.onnx.recognitionDictionaryPath)
             if (dictionaryResource.exists()) {
                 dictionaryResource.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
@@ -160,20 +157,17 @@ class OcrEngine(
                     }
                 }
             }
-        } catch (exception: Exception) {
+        }.onFailure { exception ->
             log.error("OCR 문자 사전 조회 실패", exception)
         }
     }
 
-    private fun loadResourceAsBytes(resourcePath: String): ByteArray? {
-        return try {
-            val targetResource = resourceLoader.getResource(resourcePath)
-            if (targetResource.exists()) targetResource.inputStream.use { it.readBytes() } else null
-        } catch (exception: IOException) {
-            log.error("파일 조회 실패", exception)
-            null
-        }
-    }
+    private fun loadResourceAsBytes(resourcePath: String): ByteArray? = runCatching {
+        val targetResource = resourceLoader.getResource(resourcePath)
+        if (targetResource.exists()) targetResource.inputStream.use { it.readBytes() } else null
+    }.onFailure { exception ->
+        log.error("파일 조회 실패", exception)
+    }.getOrNull()
 
     private fun detectRegions(sourceImage: BufferedImage): List<List<TextBlock.Coordinate>> {
         val environment = env ?: return createFallbackBounds(sourceImage)
@@ -464,15 +458,8 @@ class OcrEngine(
         val totalPixelCount = targetWidth * targetHeight
         val blueOffset = 2 * totalPixelCount
 
-        val normalizationMeans = meanValues ?: floatArrayOf(0.5f, 0.5f, 0.5f)
-        val normalizationStds = stdDevValues ?: floatArrayOf(0.5f, 0.5f, 0.5f)
-
-        val meanR = normalizationMeans[0]
-        val meanG = normalizationMeans[1]
-        val meanB = normalizationMeans[2]
-        val stdR = normalizationStds[0]
-        val stdG = normalizationStds[1]
-        val stdB = normalizationStds[2]
+        val (meanR, meanG, meanB) = meanValues ?: floatArrayOf(0.5f, 0.5f, 0.5f)
+        val (stdR, stdG, stdB) = stdDevValues ?: floatArrayOf(0.5f, 0.5f, 0.5f)
 
         for (pixelIndex in 0 until totalPixelCount) {
             val rgbValue = rawPixels[pixelIndex]

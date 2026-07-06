@@ -17,8 +17,7 @@ object HangulUtils {
         '\u0000', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
     )
 
-    fun normalizeToJamo(text: String): String {
-        val result = StringBuilder(text.length * 3)
+    fun normalizeToJamo(text: String): String = buildString(text.length * 3) {
         for (c in text) {
             if (c in HANGUL_BASE.toChar()..HANGUL_END.toChar()) {
                 val base = c.code - HANGUL_BASE
@@ -26,17 +25,16 @@ object HangulUtils {
                 val medial = (base % INITIAL_STEP) / FINAL_COUNT
                 val final = base % FINAL_COUNT
 
-                result.append(INITIAL_JAMOS[initial])
-                result.append(MEDIAL_JAMOS[medial])
+                append(INITIAL_JAMOS[initial])
+                append(MEDIAL_JAMOS[medial])
 
                 if (final > 0) {
-                    result.append(FINAL_JAMOS[final])
+                    append(FINAL_JAMOS[final])
                 }
             } else {
-                result.append(c)
+                append(c)
             }
         }
-        return result.toString()
     }
 
     fun levenshteinDistanceTo(text: String, target: String): Int {
