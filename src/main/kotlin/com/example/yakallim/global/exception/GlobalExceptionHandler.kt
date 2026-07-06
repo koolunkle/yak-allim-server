@@ -3,9 +3,11 @@ package com.example.yakallim.global.exception
 import com.example.yakallim.ocr.domain.exception.OcrException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -19,7 +21,7 @@ class GlobalExceptionHandler {
             error = ex.status.reasonPhrase,
             message = ex.message
         )
-        return ResponseEntity.status(ex.status).body(response)
+        return ResponseEntity.status(ex.status).contentType(MediaType.APPLICATION_JSON).body(response)
     }
 
     @ExceptionHandler(Exception::class)
@@ -31,6 +33,11 @@ class GlobalExceptionHandler {
             error = status.reasonPhrase,
             message = "서버 내부 오류가 발생했습니다."
         )
-        return ResponseEntity.status(status).body(response)
+        return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(response)
+    }
+
+    @ExceptionHandler(AsyncRequestNotUsableException::class)
+    fun handleAsyncRequestNotUsableException() {
+        log.warn("클라이언트 연결 종료로 인해 SSE 스트림을 더 이상 사용할 수 없습니다.")
     }
 }

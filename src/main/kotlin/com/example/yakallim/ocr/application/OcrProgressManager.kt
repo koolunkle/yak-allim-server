@@ -123,7 +123,9 @@ class OcrProgressManager(
                     removeEmitter(jobId, emitter)
                 }
             } catch (_: Exception) {
-                emitter.complete()
+                try {
+                    emitter.complete()
+                } catch (_: Exception) {}
                 removeEmitter(jobId, emitter)
             }
         }
@@ -162,7 +164,9 @@ class OcrProgressManager(
                     failedEmitters.add(emitter)
                 }
             } catch (_: Exception) {
-                emitter.complete()
+                try {
+                    emitter.complete()
+                } catch (_: Exception) {}
                 failedEmitters.add(emitter)
             }
         }
