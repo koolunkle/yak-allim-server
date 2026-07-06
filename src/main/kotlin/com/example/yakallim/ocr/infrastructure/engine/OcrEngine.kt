@@ -3,8 +3,10 @@ package com.example.yakallim.ocr.infrastructure.engine
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import com.example.yakallim.ocr.application.OcrProgressManager
 import com.example.yakallim.ocr.domain.engine.OcrEngine
 import com.example.yakallim.ocr.domain.model.BoundingBox
+import com.example.yakallim.ocr.domain.model.PipelineStep
 import com.example.yakallim.ocr.domain.model.TextBlock
 import com.example.yakallim.ocr.infrastructure.config.OcrProperties
 import jakarta.annotation.PostConstruct
@@ -28,7 +30,8 @@ import javax.imageio.ImageIO
 @Component
 class OcrEngine(
     private val resourceLoader: ResourceLoader,
-    private val ocrProperties: OcrProperties
+    private val ocrProperties: OcrProperties,
+    private val ocrProgressManager: OcrProgressManager
 ) : OcrEngine, AutoCloseable {
 
     companion object {
@@ -69,10 +72,15 @@ class OcrEngine(
     private var vocab: List<String> = emptyList()
     private var isReady = false
 
-    override fun runOcr(imageStream: InputStream): List<TextBlock> {
+    override fun runOcr(imageStream: InputStream, jobId: String?): List<TextBlock> {
         if (!isReady) return emptyList()
         try {
             val sourceImage = ImageIO.read(imageStream) ?: throw IllegalArgumentException("유효하지 않은 이미지 스트림입니다.")
+            
+            if (jobId != null) {
+                ocrProgressManager.publishProgress(jobId, PipelineStep.TEXT_DETECTION)
+            }
+            
             val detectedTextRegions = detectRegions(sourceImage)
             val recognitionInputs = mutableListOf<RecognitionInput>()
 
@@ -93,6 +101,11 @@ class OcrEngine(
                     recognitionInputs.add(RecognitionInput(column.image, segmentCoordinateBounds))
                 }
             }
+            
+            if (jobId != null) {
+                ocrProgressManager.publishProgress(jobId, PipelineStep.TEXT_RECOGNITION)
+            }
+
             return runBlocking(Dispatchers.Default) {
                 recognitionInputs.map { input ->
                     async {
@@ -449,7 +462,6 @@ class OcrEngine(
         val floatArray = tensorFloatBuffer.array()
 
         val totalPixelCount = targetWidth * targetHeight
-        val greenOffset = totalPixelCount
         val blueOffset = 2 * totalPixelCount
 
         val normalizationMeans = meanValues ?: floatArrayOf(0.5f, 0.5f, 0.5f)
@@ -465,7 +477,7 @@ class OcrEngine(
         for (pixelIndex in 0 until totalPixelCount) {
             val rgbValue = rawPixels[pixelIndex]
             floatArray[pixelIndex] = (((rgbValue shr 16) and 0xFF) / 255.0f - meanR) / stdR
-            floatArray[greenOffset + pixelIndex] = (((rgbValue shr 8) and 0xFF) / 255.0f - meanG) / stdG
+            floatArray[totalPixelCount + pixelIndex] = (((rgbValue shr 8) and 0xFF) / 255.0f - meanG) / stdG
             floatArray[blueOffset + pixelIndex] = ((rgbValue and 0xFF) / 255.0f - meanB) / stdB
         }
         return tensorFloatBuffer

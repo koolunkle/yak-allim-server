@@ -36,7 +36,7 @@ class OcrControllerTest {
         val submitResult = mockMvc.perform(
             MockMvcRequestBuilders.multipart("/api/v1/ocr/enqueue")
                 .file(mockMultipartFile)
-                .param("delay", "1000")
+                .param("delay", "5000")
         ).andExpect(MockMvcResultMatchers.status().isAccepted).andReturn()
 
         val jobId = objectMapper.readValue(submitResult.response.contentAsString, OcrJobResponse::class.java).jobId

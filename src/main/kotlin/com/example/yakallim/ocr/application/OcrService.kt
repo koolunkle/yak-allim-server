@@ -1,6 +1,7 @@
 package com.example.yakallim.ocr.application
 
 import com.example.yakallim.ocr.domain.exception.OcrException
+import com.example.yakallim.ocr.domain.model.PipelineStep
 import com.example.yakallim.ocr.domain.repository.OcrJobRepository
 import com.example.yakallim.ocr.presentation.dto.OcrJobResponse
 import org.slf4j.LoggerFactory
@@ -15,7 +16,8 @@ import java.util.UUID
 @Service
 class OcrService(
     private val ocrJobProcessor: OcrJobProcessor,
-    private val ocrJobRepository: OcrJobRepository
+    private val ocrJobRepository: OcrJobRepository,
+    private val ocrProgressManager: OcrProgressManager
 ) {
     private val log = LoggerFactory.getLogger(OcrService::class.java)
     private val uploadDir = Paths.get("outputs", "api-images").toAbsolutePath().normalize()
@@ -58,6 +60,8 @@ class OcrService(
 
         val jobId = UUID.randomUUID().toString()
         val job = ocrJobRepository.registerJob(jobId)
+
+        ocrProgressManager.publishProgress(jobId, PipelineStep.ENQUEUED)
 
         ocrJobProcessor.executeTask(jobId, targetPath, uniqueFileName, fcmToken, delay)
 

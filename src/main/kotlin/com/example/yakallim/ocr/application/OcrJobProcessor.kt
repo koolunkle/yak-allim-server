@@ -2,6 +2,7 @@ package com.example.yakallim.ocr.application
 
 import com.example.yakallim.notification.domain.NotificationClient
 import com.example.yakallim.ocr.domain.engine.OcrEngine
+import com.example.yakallim.ocr.domain.model.PipelineStep
 import com.example.yakallim.ocr.domain.repository.OcrJobRepository
 import com.example.yakallim.ocr.infrastructure.parser.PrescriptionParser
 import com.example.yakallim.ocr.presentation.dto.OcrResponse
@@ -18,7 +19,8 @@ class OcrJobProcessor(
     private val ocrEngine: OcrEngine,
     private val ocrJobRepository: OcrJobRepository,
     private val prescriptionParser: PrescriptionParser,
-    @param:Qualifier("FCM_CLIENT") private val notifier: NotificationClient
+    @param:Qualifier("FCM_CLIENT") private val notifier: NotificationClient,
+    private val ocrProgressManager: OcrProgressManager
 ) {
     private val log = LoggerFactory.getLogger(OcrJobProcessor::class.java)
 
@@ -40,10 +42,12 @@ class OcrJobProcessor(
 
         if (ocrJobRepository.isCancelled(jobId)) {
             log.info("OCR 작업 시작 전 취소: 작업ID='{}'", jobId)
+            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, "작업이 취소되었습니다.")
             return
         }
 
         ocrJobRepository.updateToProcessing(jobId)
+        ocrProgressManager.publishProgress(jobId, PipelineStep.IMAGE_PROCESSING)
 
         val stopwatch = StopWatch(jobId)
 
@@ -51,10 +55,12 @@ class OcrJobProcessor(
             check(!ocrJobRepository.isCancelled(jobId)) { "ONNX 추론 전 취소됨" }
 
             stopwatch.start("ONNX 추론")
-            val textBlocks = Files.newInputStream(path).use { ocrEngine.runOcr(it) }
+            val textBlocks = Files.newInputStream(path).use { ocrEngine.runOcr(it, jobId) }
             stopwatch.stop()
 
             check(!ocrJobRepository.isCancelled(jobId)) { "구조화 파싱 전 취소됨" }
+
+            ocrProgressManager.publishProgress(jobId, PipelineStep.EXPORT_RESULT)
 
             stopwatch.start("구조화 파싱")
             val prescriptions = prescriptionParser.parse(textBlocks)
@@ -69,6 +75,7 @@ class OcrJobProcessor(
                 prescriptions = prescriptions
             )
 
+            ocrProgressManager.publishProgress(jobId, PipelineStep.COMPLETED, response.message)
             ocrJobRepository.updateToCompleted(jobId, response)
 
             log.info("복약 안내서 분석 완료: {}", fileName)
@@ -89,9 +96,11 @@ class OcrJobProcessor(
             )
         } catch (e: IllegalStateException) {
             log.info("OCR 작업 취소: 작업ID='{}', 사유='{}'", jobId, e.message)
+            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, "작업이 취소되었습니다.")
         } catch (e: Exception) {
             val errorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."
             log.error("비동기 OCR 처리 실패: {}", fileName, e)
+            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, errorMessage)
             ocrJobRepository.updateToFailed(jobId, errorMessage)
             notifier.notify(
                 token = token ?: "",
