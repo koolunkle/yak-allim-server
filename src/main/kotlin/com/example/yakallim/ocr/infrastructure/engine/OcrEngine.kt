@@ -16,6 +16,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -27,6 +28,7 @@ import java.nio.FloatBuffer
 import javax.imageio.ImageIO
 
 @Component
+@Profile("!test")
 class OcrEngine(
     private val resourceLoader: ResourceLoader,
     private val ocrProperties: OcrProperties,

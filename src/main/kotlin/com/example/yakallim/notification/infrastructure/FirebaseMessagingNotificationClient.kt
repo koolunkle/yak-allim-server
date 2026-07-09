@@ -6,8 +6,10 @@ import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.Notification
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.context.annotation.Profile
 
 @Component("FCM_CLIENT")
+@Profile("!test")
 class FirebaseMessagingNotificationClient(
     private val firebaseMessaging: FirebaseMessaging
 ) : NotificationClient {
