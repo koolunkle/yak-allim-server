@@ -1,0 +1,45 @@
+name: Java CI with Gradle
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Create dummy Firebase key and ONNX model files
+      run: |
+        # Spring Boot 초기화 시 Firebase 키 파일이 없을 경우 발생하는 빌드/테스트 에러 방지용 더미 JSON 생성
+        echo '{"type": "service_account", "project_id": "dummy-project", "private_key_id": "dummy-key-id", "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC3\n-----END PRIVATE KEY-----\n", "client_email": "dummy@dummy.iam.gserviceaccount.com"}' > yak-allim-firebase-key.json
+        
+        # 클래스패스 내에 ONNX 모델 파일이 없을 경우 발생하는 로딩 에러 방지용 더미 파일 생성
+        mkdir -p src/main/resources/models
+        touch src/main/resources/models/ch_PP-OCRv4_det_infer.onnx
+        touch src/main/resources/models/korean_PP-OCRv4_rec_infer.onnx
+
+
+    - name: Make gradle wrapper executable
+      run: chmod +x gradlew
+
+    - name: Build with Gradle
+      run: ./gradlew build
+
