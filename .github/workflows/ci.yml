@@ -41,5 +41,22 @@ jobs:
       run: chmod +x gradlew
 
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew build -x test
+
+    - name: Generate Job Summary
+      if: always()
+      run: |
+        echo "### 빌드 작업 요약 (Job Summary)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| 항목 | 상세 정보 |" >> $GITHUB_STEP_SUMMARY
+        echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+        echo "| **워크플로우** | ${{ github.workflow }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| **트리거 이벤트** | \`${{ github.event_name }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **대상 브랜치** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **빌드 결과** | ${{ job.status == 'success' && '성공' || '실패' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| **테스트 여부** | 제외됨 (\`-x test\`) |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "> **안내:** 원격 CI 환경 특성상 대용량 ONNX 모델 파일 및 Firebase 키 파일 미등록으로 인해 테스트를 제외(\`-x test\`)하고 컴파일 및 패키징 빌드만 검증을 마쳤습니다." >> $GITHUB_STEP_SUMMARY
+
+
 
