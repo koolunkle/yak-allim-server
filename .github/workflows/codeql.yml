@@ -35,9 +35,10 @@ jobs:
 
     # CodeQL 도구 초기화 및 대상 언어 지정
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: java-kotlin
+        build-mode: manual
 
     # 수동 빌드를 통한 컴파일 진행 (테스트 제외 빌드)
     - name: Build with Gradle
@@ -47,6 +48,6 @@ jobs:
 
     # 분석 수행 및 결과 업로드
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         category: "/language:java-kotlin"
