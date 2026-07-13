@@ -75,4 +75,17 @@ class OcrControllerTest {
         val job = objectMapper.readValue(submitResult.response.contentAsString, OcrJobResponse::class.java)
         Assertions.assertNotNull(job.jobId)
     }
+
+    @Test
+    @DisplayName("허용되지 않은 파일 확장자 업로드 시 BAD_REQUEST를 반환한다")
+    fun shouldRejectInvalidFileExtension() {
+        val invalidFilename = "test.exe"
+        val mockMultipartFile =
+            MockMultipartFile("file", invalidFilename, MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".toByteArray())
+
+        mockMvc.perform(
+            MockMvcRequestBuilders.multipart("/api/v1/ocr/enqueue")
+                .file(mockMultipartFile)
+        ).andExpect(MockMvcResultMatchers.status().isBadRequest)
+    }
 }

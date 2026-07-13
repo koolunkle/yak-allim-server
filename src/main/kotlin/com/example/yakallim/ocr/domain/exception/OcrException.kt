@@ -19,4 +19,7 @@ sealed class OcrException(
 
     class IllegalJobStateException(message: String) :
         OcrException(HttpStatus.BAD_REQUEST, message)
+
+    class InvalidFileExtensionException(message: String = "허용되지 않는 파일 확장자입니다.") :
+        OcrException(HttpStatus.BAD_REQUEST, message)
 }

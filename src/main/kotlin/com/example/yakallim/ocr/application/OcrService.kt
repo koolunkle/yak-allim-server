@@ -5,6 +5,7 @@ import com.example.yakallim.ocr.domain.model.PipelineStep
 import com.example.yakallim.ocr.domain.repository.OcrJobRepository
 import com.example.yakallim.ocr.presentation.dto.OcrJobResponse
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.IOException
@@ -17,10 +18,12 @@ import java.util.*
 class OcrService(
     private val ocrJobProcessor: OcrJobProcessor,
     private val ocrJobRepository: OcrJobRepository,
-    private val ocrProgressManager: OcrProgressManager
+    private val ocrProgressManager: OcrProgressManager,
+    @Value("\${ocr.upload-dir:outputs/api-images}") private val uploadDirStr: String
 ) {
     private val log = LoggerFactory.getLogger(OcrService::class.java)
-    private val uploadDir = Paths.get("outputs", "api-images").toAbsolutePath().normalize()
+    private val uploadDir = Paths.get(uploadDirStr).toAbsolutePath().normalize()
+
 
     init {
         try {
@@ -44,8 +47,16 @@ class OcrService(
         val originalFilename = file.originalFilename ?: ""
         val extension = originalFilename.substringAfterLast('.', "")
             .replace(EXTENSION_REGEX, "")
-            .let { if (it.isNotEmpty()) ".$it" else "" }
-        val uniqueFileName = "${UUID.randomUUID()}$extension"
+            .lowercase()
+
+        val safeExtension = when (extension) {
+            "jpg", "jpeg" -> "jpg"
+            "png" -> "png"
+            "gif" -> "gif"
+            "webp" -> "webp"
+            else -> throw OcrException.InvalidFileExtensionException("허용되지 않는 파일 확장자입니다: $extension")
+        }
+        val uniqueFileName = "${UUID.randomUUID()}.$safeExtension"
         val targetPath = uploadDir.resolve(uniqueFileName).normalize()
         require(targetPath.startsWith(uploadDir)) { "Invalid file path: path traversal detected." }
 
