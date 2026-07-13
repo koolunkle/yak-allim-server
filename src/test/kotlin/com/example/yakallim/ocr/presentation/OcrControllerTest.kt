@@ -59,4 +59,20 @@ class OcrControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/ocr/jobs/non-existent-id/cancel"))
             .andExpect(MockMvcResultMatchers.status().isNotFound)
     }
+
+    @Test
+    @DisplayName("파일명에 상위 디렉터리 접근 패턴이 있어도 안전하게 저장 및 처리된다")
+    fun shouldSanitizePathTraversalFilenameAndProcessSuccessfully() {
+        val maliciousFilename = "../../../malicious_test.jpg"
+        val mockMultipartFile =
+            MockMultipartFile("file", maliciousFilename, MediaType.IMAGE_JPEG_VALUE, "test content".toByteArray())
+        
+        val submitResult = mockMvc.perform(
+            MockMvcRequestBuilders.multipart("/api/v1/ocr/enqueue")
+                .file(mockMultipartFile)
+        ).andExpect(MockMvcResultMatchers.status().isAccepted).andReturn()
+
+        val job = objectMapper.readValue(submitResult.response.contentAsString, OcrJobResponse::class.java)
+        Assertions.assertNotNull(job.jobId)
+    }
 }

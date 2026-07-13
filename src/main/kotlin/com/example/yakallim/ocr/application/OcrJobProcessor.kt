@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component
 import org.springframework.util.StopWatch
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 
 @Component
 class OcrJobProcessor(
@@ -32,6 +33,11 @@ class OcrJobProcessor(
         token: String?,
         delay: Long? = null
     ) {
+        val normalizedPath = path.toAbsolutePath().normalize()
+        if (!normalizedPath.startsWith(BASE_DIR)) {
+            throw SecurityException("Access denied: Invalid file path.")
+        }
+
         delay?.takeIf { it > 0 }?.let {
             try {
                 Thread.sleep(it)
@@ -109,5 +115,9 @@ class OcrJobProcessor(
                 data = mapOf("jobId" to jobId, "status" to "FAILED", "error" to errorMessage)
             )
         }
+    }
+
+    companion object {
+        private val BASE_DIR = Paths.get("outputs", "api-images").toAbsolutePath().normalize()
     }
 }

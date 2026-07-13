@@ -11,7 +11,7 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
-import java.util.UUID
+import java.util.*
 
 @Service
 class OcrService(
@@ -42,9 +42,12 @@ class OcrService(
         }
 
         val originalFilename = file.originalFilename ?: ""
-        val extension = originalFilename.substringAfterLast('.', "").let { if (it.isNotEmpty()) ".$it" else "" }
+        val extension = originalFilename.substringAfterLast('.', "")
+            .replace(EXTENSION_REGEX, "")
+            .let { if (it.isNotEmpty()) ".$it" else "" }
         val uniqueFileName = "${UUID.randomUUID()}$extension"
-        val targetPath = uploadDir.resolve(uniqueFileName)
+        val targetPath = uploadDir.resolve(uniqueFileName).normalize()
+        require(targetPath.startsWith(uploadDir)) { "Invalid file path: path traversal detected." }
 
         val startTime = System.currentTimeMillis()
 
@@ -80,5 +83,9 @@ class OcrService(
 
         ocrJobRepository.updateToCancelled(jobId)
         log.info("OCR 작업 취소 요청 완료: 작업ID='{}' (이전 상태: {})", jobId, job.status)
+    }
+
+    companion object {
+        private val EXTENSION_REGEX = Regex("[^a-zA-Z0-9]")
     }
 }
