@@ -39,7 +39,7 @@ pipeline {
                         }
                         
                         # Firebase 자격 증명 복사
-                        Copy-Item -Path "${env.FIREBASE_KEY_FILE}" -Destination "${env.DEPLOY_DIR}\\yak-allim-firebase-key.json" -Force
+                        Copy-Item -Path \$env:FIREBASE_KEY_FILE -Destination "${env.DEPLOY_DIR}\\yak-allim-firebase-key.json" -Force
                         
                         # 외장 OCR 모델 파일 복사
                         if (Test-Path -Path "${env.RESOURCE_DIR}") {
