@@ -9,6 +9,13 @@ import java.io.InputStream
 @Component
 @Profile("test")
 class MockOcrEngine : OcrEngine {
+    /**
+     * Returns fixed OCR results for test scenarios.
+     *
+     * @param imageStream Ignored.
+     * @param jobId Ignored.
+     * @return A predefined list of recognized text blocks.
+     */
     override fun runOcr(imageStream: InputStream, jobId: String?): List<TextBlock> {
         return listOf(
             TextBlock("약품명", 1.0f, createBounds(80, 340, 20, 60)),
@@ -20,6 +27,15 @@ class MockOcrEngine : OcrEngine {
         )
     }
 
+    /**
+     * Builds rectangular bounds from the given corner coordinates.
+     *
+     * @param minX The x-coordinate of the left edge.
+     * @param maxX The x-coordinate of the right edge.
+     * @param minY The y-coordinate of the top edge.
+     * @param maxY The y-coordinate of the bottom edge.
+     * @return A list of four coordinates representing the rectangle's corners.
+     */
     private fun createBounds(minX: Int, maxX: Int, minY: Int, maxY: Int): List<TextBlock.Coordinate> {
         return listOf(
             TextBlock.Coordinate(minX, minY),

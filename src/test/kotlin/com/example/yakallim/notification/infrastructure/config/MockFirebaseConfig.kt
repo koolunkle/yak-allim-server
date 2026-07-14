@@ -11,11 +11,21 @@ import org.springframework.context.annotation.Profile
 @Profile("test")
 class MockFirebaseConfig {
 
+    /**
+     * Provides a mocked `FirebaseMessaging` instance for tests.
+     *
+     * @return A mock `FirebaseMessaging` instance.
+     */
     @Bean
     fun firebaseMessaging(): FirebaseMessaging {
         return Mockito.mock(FirebaseMessaging::class.java)
     }
 
+    /**
+     * Provides a no-op notification client for tests.
+     *
+     * @return A `NotificationClient` whose `notify` method does nothing.
+     */
     @Bean("FCM_CLIENT")
     fun mockNotificationClient(): NotificationClient {
         return object : NotificationClient {
