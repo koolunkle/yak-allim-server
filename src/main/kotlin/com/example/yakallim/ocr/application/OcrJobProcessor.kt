@@ -7,12 +7,14 @@ import com.example.yakallim.ocr.domain.repository.OcrJobRepository
 import com.example.yakallim.ocr.infrastructure.parser.PrescriptionParser
 import com.example.yakallim.ocr.presentation.dto.OcrResponse
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import org.springframework.util.StopWatch
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 
 @Component
 class OcrJobProcessor(
@@ -20,9 +22,11 @@ class OcrJobProcessor(
     private val ocrJobRepository: OcrJobRepository,
     private val prescriptionParser: PrescriptionParser,
     @param:Qualifier("FCM_CLIENT") private val notifier: NotificationClient,
-    private val ocrProgressManager: OcrProgressManager
+    private val ocrProgressManager: OcrProgressManager,
+    @Value("\${ocr.upload-dir:outputs/api-images}") private val uploadDirStr: String
 ) {
     private val log = LoggerFactory.getLogger(OcrJobProcessor::class.java)
+    private val baseDir = Paths.get(uploadDirStr).toAbsolutePath().normalize()
 
     @Async
     fun executeTask(
@@ -32,6 +36,12 @@ class OcrJobProcessor(
         token: String?,
         delay: Long? = null
     ) {
+        val normalizedPath = path.toAbsolutePath().normalize()
+        if (!normalizedPath.startsWith(baseDir)) {
+            throw SecurityException("Access denied: Invalid file path.")
+        }
+
+
         delay?.takeIf { it > 0 }?.let {
             try {
                 Thread.sleep(it)

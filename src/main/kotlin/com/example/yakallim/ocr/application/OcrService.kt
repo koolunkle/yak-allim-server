@@ -5,22 +5,25 @@ import com.example.yakallim.ocr.domain.model.PipelineStep
 import com.example.yakallim.ocr.domain.repository.OcrJobRepository
 import com.example.yakallim.ocr.presentation.dto.OcrJobResponse
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
-import java.util.UUID
+import java.util.*
 
 @Service
 class OcrService(
     private val ocrJobProcessor: OcrJobProcessor,
     private val ocrJobRepository: OcrJobRepository,
-    private val ocrProgressManager: OcrProgressManager
+    private val ocrProgressManager: OcrProgressManager,
+    @Value("\${ocr.upload-dir:outputs/api-images}") private val uploadDirStr: String
 ) {
     private val log = LoggerFactory.getLogger(OcrService::class.java)
-    private val uploadDir = Paths.get("outputs", "api-images").toAbsolutePath().normalize()
+    private val uploadDir = Paths.get(uploadDirStr).toAbsolutePath().normalize()
+
 
     init {
         try {
@@ -42,9 +45,20 @@ class OcrService(
         }
 
         val originalFilename = file.originalFilename ?: ""
-        val extension = originalFilename.substringAfterLast('.', "").let { if (it.isNotEmpty()) ".$it" else "" }
-        val uniqueFileName = "${UUID.randomUUID()}$extension"
-        val targetPath = uploadDir.resolve(uniqueFileName)
+        val extension = originalFilename.substringAfterLast('.', "")
+            .replace(EXTENSION_REGEX, "")
+            .lowercase()
+
+        val safeExtension = when (extension) {
+            "jpg", "jpeg" -> "jpg"
+            "png" -> "png"
+            "gif" -> "gif"
+            "webp" -> "webp"
+            else -> throw OcrException.InvalidFileExtensionException("허용되지 않는 파일 확장자입니다: $extension")
+        }
+        val uniqueFileName = "${UUID.randomUUID()}.$safeExtension"
+        val targetPath = uploadDir.resolve(uniqueFileName).normalize()
+        require(targetPath.startsWith(uploadDir)) { "Invalid file path: path traversal detected." }
 
         val startTime = System.currentTimeMillis()
 
@@ -80,5 +94,9 @@ class OcrService(
 
         ocrJobRepository.updateToCancelled(jobId)
         log.info("OCR 작업 취소 요청 완료: 작업ID='{}' (이전 상태: {})", jobId, job.status)
+    }
+
+    companion object {
+        private val EXTENSION_REGEX = Regex("[^a-zA-Z0-9]")
     }
 }
