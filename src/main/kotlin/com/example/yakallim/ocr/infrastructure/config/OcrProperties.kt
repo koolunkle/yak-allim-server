@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "ocr")
 data class OcrProperties(
+    val type: String,
     val engine: Engine,
     val parser: Parser
 ) {

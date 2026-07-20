@@ -28,13 +28,19 @@ val springdocVersion: String by project
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-    implementation("com.microsoft.onnxruntime:onnxruntime:$onnxruntimeVersion")
+
     implementation("com.google.firebase:firebase-admin:$firebaseAdminVersion")
+    implementation("com.microsoft.onnxruntime:onnxruntime:$onnxruntimeVersion")
+
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
+
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     constraints {
         implementation("com.google.guava:guava:$guavaVersion")

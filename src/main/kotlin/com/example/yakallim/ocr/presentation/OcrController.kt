@@ -1,17 +1,17 @@
 package com.example.yakallim.ocr.presentation
 
+import com.example.yakallim.ocr.application.N8nOcrService
 import com.example.yakallim.ocr.application.OcrProgressManager
 import com.example.yakallim.ocr.application.OcrService
+import com.example.yakallim.ocr.domain.exception.OcrException
+import com.example.yakallim.ocr.presentation.dto.N8nCallbackRequest
 import com.example.yakallim.ocr.presentation.dto.OcrJobResponse
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
@@ -19,8 +19,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 @RequestMapping("/api/v1/ocr")
 class OcrController(
     private val ocrService: OcrService,
-    private val ocrProgressManager: OcrProgressManager
+    private val ocrProgressManager: OcrProgressManager,
+    private val n8nOcrServiceProvider: ObjectProvider<N8nOcrService>
 ) {
+
     @PostMapping("/enqueue", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun enqueueJob(
         @RequestParam("file") file: MultipartFile,
@@ -51,5 +53,16 @@ class OcrController(
     fun cancelJob(@PathVariable jobId: String): ResponseEntity<Unit> {
         ocrService.cancelJob(jobId)
         return ResponseEntity.noContent().build()
+    }
+
+    @PostMapping("/n8n/callback/{jobId}")
+    fun callback(
+        @PathVariable jobId: String,
+        @Valid @RequestBody request: N8nCallbackRequest
+    ): ResponseEntity<Unit> {
+        val n8nOcrService = (ocrService as? N8nOcrService) ?: n8nOcrServiceProvider.ifAvailable
+            ?: throw OcrException.IllegalJobStateException("n8n OCR 서비스가 활성화되어 있지 않습니다. 'ocr.type' 속성을 확인해주세요.")
+        n8nOcrService.handleCallback(jobId, request.data.prescriptions)
+        return ResponseEntity.ok().build()
     }
 }
