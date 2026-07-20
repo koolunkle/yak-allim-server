@@ -4,33 +4,28 @@ import com.example.yakallim.ocr.domain.exception.OcrException
 import com.example.yakallim.ocr.domain.model.PipelineStep
 import com.example.yakallim.ocr.domain.repository.OcrJobRepository
 import com.example.yakallim.ocr.presentation.dto.OcrJobResponse
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
-import java.util.*
+import java.util.UUID
 
-@Service
-class OcrService(
-    private val ocrJobProcessor: OcrJobProcessor,
-    private val ocrJobRepository: OcrJobRepository,
-    private val ocrProgressManager: OcrProgressManager,
-    @Value("\${ocr.upload-dir:outputs/api-images}") private val uploadDirStr: String
+abstract class OcrService(
+    protected val ocrJobRepository: OcrJobRepository,
+    protected val ocrProgressManager: OcrProgressManager,
+    uploadDirStr: String
 ) {
-    private val log = LoggerFactory.getLogger(OcrService::class.java)
-    private val uploadDir = Paths.get(uploadDirStr).toAbsolutePath().normalize()
-
+    protected val log: Logger = LoggerFactory.getLogger(javaClass)
+    protected val uploadDir: Path = Paths.get(uploadDirStr).toAbsolutePath().normalize()
 
     init {
         try {
             Files.createDirectories(uploadDir)
-            log.info("OCR 이미지 디렉터리 생성 완료: $uploadDir")
         } catch (e: IOException) {
-            log.error("OCR 이미지 디렉터리 생성 실패: $uploadDir", e)
             throw OcrException.FileSaveException("OCR 이미지 디렉터리를 생성할 수 없습니다.", e)
         }
     }
@@ -60,15 +55,11 @@ class OcrService(
         val targetPath = uploadDir.resolve(uniqueFileName).normalize()
         require(targetPath.startsWith(uploadDir)) { "Invalid file path: path traversal detected." }
 
-        val startTime = System.currentTimeMillis()
-
         try {
             file.inputStream.use { inputStream ->
                 Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING)
             }
-            log.info("이미지 파일 저장 완료: $targetPath (소요 시간: {}ms)", System.currentTimeMillis() - startTime)
         } catch (e: IOException) {
-            log.error("이미지 파일 저장 중 오류 발생: $targetPath", e)
             throw OcrException.FileSaveException("이미지 파일 저장 중 입출력 오류가 발생했습니다.", e)
         }
 
@@ -77,10 +68,18 @@ class OcrService(
 
         ocrProgressManager.publishProgress(jobId, PipelineStep.ENQUEUED)
 
-        ocrJobProcessor.executeTask(jobId, targetPath, uniqueFileName, fcmToken, delay)
+        processJob(jobId, targetPath, uniqueFileName, fcmToken, delay)
 
         return job
     }
+
+    protected abstract fun processJob(
+        jobId: String,
+        targetPath: Path,
+        uniqueFileName: String,
+        fcmToken: String?,
+        delay: Long?
+    )
 
     fun getJob(jobId: String): OcrJobResponse? = ocrJobRepository.getJob(jobId)
 

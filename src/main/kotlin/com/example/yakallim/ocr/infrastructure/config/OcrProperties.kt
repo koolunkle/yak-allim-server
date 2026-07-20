@@ -4,8 +4,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "ocr")
 data class OcrProperties(
+    val type: String = "local",
     val engine: Engine,
-    val parser: Parser
+    val parser: Parser,
+    val n8n: N8n = N8n()
 ) {
     data class Engine(
         val onnx: Onnx
@@ -24,5 +26,10 @@ data class OcrProperties(
         val columnSeparatorX: Int,
         val medicineMinX: Int,
         val medicineMaxX: Int
+    )
+
+    data class N8n(
+        val webhookUrl: String = "",
+        val webhookSecret: String = ""
     )
 }
