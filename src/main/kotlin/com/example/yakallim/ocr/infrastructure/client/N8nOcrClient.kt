@@ -4,9 +4,9 @@ import com.example.yakallim.notification.domain.NotificationClient
 import com.example.yakallim.ocr.application.OcrProgressManager
 import com.example.yakallim.ocr.domain.model.PipelineStep
 import com.example.yakallim.ocr.domain.repository.OcrJobRepository
+import com.example.yakallim.ocr.infrastructure.config.OcrProperties
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -24,7 +24,7 @@ class N8nOcrClient(
     private val ocrJobRepository: OcrJobRepository,
     private val ocrProgressManager: OcrProgressManager,
     @param:Qualifier("FCM_CLIENT") private val notifier: NotificationClient,
-    @param:Value("\${ocr.n8n.webhook-url}") private val n8nWebhookUrl: String
+    private val ocrProperties: OcrProperties
 ) {
     private val log = LoggerFactory.getLogger(N8nOcrClient::class.java)
     private val restTemplate = RestTemplate()
@@ -34,7 +34,7 @@ class N8nOcrClient(
         try {
             ocrProgressManager.publishProgress(jobId, PipelineStep.IMAGE_PROCESSING)
 
-            val uri = UriComponentsBuilder.fromUriString(n8nWebhookUrl)
+            val uri = UriComponentsBuilder.fromUriString(ocrProperties.n8n.webhookUrl)
                 .queryParam("jobId", jobId)
                 .build()
                 .toUri()
