@@ -29,6 +29,7 @@ data class OcrProperties(
     )
 
     data class N8n(
-        val webhookUrl: String = "http://localhost:5678/webhook-test/ocr"
+        val webhookUrl: String = "http://localhost:5678/webhook-test/ocr",
+        val webhookSecret: String = "change-me-in-production"
     )
 }

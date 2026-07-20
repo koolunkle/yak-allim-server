@@ -24,13 +24,13 @@ class N8nOcrClient(
     private val ocrJobRepository: OcrJobRepository,
     private val ocrProgressManager: OcrProgressManager,
     @param:Qualifier("FCM_CLIENT") private val notifier: NotificationClient,
-    private val ocrProperties: OcrProperties
+    private val ocrProperties: OcrProperties,
+    @param:Qualifier("n8nRestTemplate") private val restTemplate: RestTemplate
 ) {
     private val log = LoggerFactory.getLogger(N8nOcrClient::class.java)
-    private val restTemplate = RestTemplate()
 
     @Async
-    fun sendToN8nAsync(jobId: String, file: File, fcmToken: String?) {
+    fun sendToN8nAsync(jobId: String, file: File, fcmToken: String?, onDispatchFailure: (String) -> Unit) {
         try {
             ocrProgressManager.publishProgress(jobId, PipelineStep.IMAGE_PROCESSING)
 
@@ -61,6 +61,8 @@ class N8nOcrClient(
             val errorMessage = e.message ?: "Failed to connect to n8n"
             ocrJobRepository.updateToFailed(jobId, errorMessage)
             ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, errorMessage)
+
+            onDispatchFailure(jobId)
 
             if (!fcmToken.isNullOrEmpty()) {
                 notifier.notify(

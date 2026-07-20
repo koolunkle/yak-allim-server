@@ -35,7 +35,9 @@ class N8nOcrService(
         if (fcmToken != null) {
             fcmTokenMap[jobId] = fcmToken
         }
-        n8nOcrClient.sendToN8nAsync(jobId, targetPath.toFile(), fcmToken)
+        n8nOcrClient.sendToN8nAsync(jobId, targetPath.toFile(), fcmToken) { failedJobId ->
+            fcmTokenMap.remove(failedJobId)
+        }
     }
 
     fun handleCallback(jobId: String, prescriptions: List<Prescription>) {
@@ -46,17 +48,20 @@ class N8nOcrService(
             prescriptions = prescriptions
         )
 
-        ocrJobRepository.updateToCompleted(jobId, response)
-        ocrProgressManager.publishProgress(jobId, PipelineStep.COMPLETED, response.message)
+        val transitionApplied = ocrJobRepository.updateToCompleted(jobId, response)
 
-        val token = fcmTokenMap.remove(jobId)
-        if (!token.isNullOrEmpty()) {
-            notifier.notify(
-                token = token,
-                title = "복약 안내서 분석 완료",
-                body = response.message,
-                data = mapOf("jobId" to jobId, "status" to "COMPLETED", "message" to response.message)
-            )
+        if (transitionApplied) {
+            ocrProgressManager.publishProgress(jobId, PipelineStep.COMPLETED, response.message)
+
+            val token = fcmTokenMap.remove(jobId)
+            if (!token.isNullOrEmpty()) {
+                notifier.notify(
+                    token = token,
+                    title = "복약 안내서 분석 완료",
+                    body = response.message,
+                    data = mapOf("jobId" to jobId, "status" to "COMPLETED", "message" to response.message)
+                )
+            }
         }
     }
 }

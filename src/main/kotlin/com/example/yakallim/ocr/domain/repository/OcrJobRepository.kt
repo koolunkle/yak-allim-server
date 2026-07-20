@@ -6,7 +6,7 @@ import com.example.yakallim.ocr.presentation.dto.OcrResponse
 interface OcrJobRepository {
     fun registerJob(jobId: String): OcrJobResponse
     fun updateToProcessing(jobId: String)
-    fun updateToCompleted(jobId: String, result: OcrResponse)
+    fun updateToCompleted(jobId: String, result: OcrResponse): Boolean
     fun updateToFailed(jobId: String, errorMessage: String)
     fun updateToCancelled(jobId: String)
     fun getJob(jobId: String): OcrJobResponse?
