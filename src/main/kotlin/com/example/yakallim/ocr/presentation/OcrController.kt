@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
+import org.slf4j.LoggerFactory
+
 @RestController
 @RequestMapping("/api/v1/ocr")
 class OcrController(
@@ -25,6 +27,7 @@ class OcrController(
     private val n8nOcrServiceProvider: ObjectProvider<N8nOcrService>,
     private val ocrProperties: OcrProperties
 ) {
+    private val log = LoggerFactory.getLogger(OcrController::class.java)
 
     @PostMapping("/enqueue", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun enqueueJob(
@@ -65,8 +68,10 @@ class OcrController(
         @RequestHeader("X-N8N-Secret", required = false) webhookSecret: String?
     ): ResponseEntity<Unit> {
         // Validate webhook secret
-        val configuredSecret = ocrProperties.n8n.webhookSecret
-        if (configuredSecret.isBlank() || webhookSecret.isNullOrBlank() || webhookSecret != configuredSecret) {
+        val configuredSecret = ocrProperties.n8n.webhookSecret.trim()
+        val receivedSecret = webhookSecret?.trim()
+        if (configuredSecret.isNotBlank() && receivedSecret != configuredSecret) {
+            log.warn("Webhook secret 검증 실패: 허용되지 않은 웹훅 요청입니다.")
             throw OcrException.IllegalJobStateException("유효하지 않은 webhook 요청입니다.")
         }
 

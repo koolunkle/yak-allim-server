@@ -7,7 +7,7 @@ data class OcrProperties(
     val type: String = "local",
     val engine: Engine,
     val parser: Parser,
-    val n8n: N8n
+    val n8n: N8n = N8n()
 ) {
     data class Engine(
         val onnx: Onnx
@@ -30,6 +30,6 @@ data class OcrProperties(
 
     data class N8n(
         val webhookUrl: String = "",
-        val webhookSecret: String
+        val webhookSecret: String = ""
     )
 }
