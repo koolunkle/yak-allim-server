@@ -65,7 +65,8 @@ class OcrController(
         @RequestHeader("X-N8N-Secret", required = false) webhookSecret: String?
     ): ResponseEntity<Unit> {
         // Validate webhook secret
-        if (webhookSecret != ocrProperties.n8n.webhookSecret) {
+        val configuredSecret = ocrProperties.n8n.webhookSecret
+        if (configuredSecret.isBlank() || webhookSecret.isNullOrBlank() || webhookSecret != configuredSecret) {
             throw OcrException.IllegalJobStateException("유효하지 않은 webhook 요청입니다.")
         }
 

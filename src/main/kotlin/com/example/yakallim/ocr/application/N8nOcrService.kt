@@ -50,10 +50,11 @@ class N8nOcrService(
 
         val transitionApplied = ocrJobRepository.updateToCompleted(jobId, response)
 
+        val token = fcmTokenMap.remove(jobId)
+
         if (transitionApplied) {
             ocrProgressManager.publishProgress(jobId, PipelineStep.COMPLETED, response.message)
 
-            val token = fcmTokenMap.remove(jobId)
             if (!token.isNullOrEmpty()) {
                 notifier.notify(
                     token = token,

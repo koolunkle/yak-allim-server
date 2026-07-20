@@ -21,7 +21,17 @@ class InMemoryOcrJobRepository : OcrJobRepository {
     }
 
     override fun updateToCompleted(jobId: String, result: OcrResponse): Boolean {
-        return updateJobStatus(jobId, OcrJobResponse.JobStatus.COMPLETED, result = result)
+        var transitionApplied = false
+        jobRegistry.computeIfPresent(jobId) { _, existing ->
+            if (existing.status == OcrJobResponse.JobStatus.ACCEPTED || existing.status == OcrJobResponse.JobStatus.PROCESSING) {
+                transitionApplied = true
+                existing.copy(status = OcrJobResponse.JobStatus.COMPLETED, result = result)
+            } else {
+                transitionApplied = false
+                existing
+            }
+        }
+        return transitionApplied
     }
 
     override fun updateToFailed(jobId: String, errorMessage: String) {
