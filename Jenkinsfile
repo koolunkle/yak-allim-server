@@ -93,14 +93,20 @@ pipeline {
                                 HEALTH_SUCCESS=false
                                 echo "=== 신규 컨테이너(\${TARGET_NAME}) Actuator HTTP 헬스 체크 진행 중... ==="
 
-                                for retry in \$(seq 1 15); do
+                                TARGET_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \${TARGET_NAME} 2>/dev/null || true)
+
+                                for retry in \$(seq 1 20); do
                                     sleep 3
-                                    HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\${TARGET_PORT}/actuator/health || echo "000")
+                                    HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\${TARGET_PORT}/actuator/health 2>/dev/null || true)
+                                    if [ "\$HTTP_CODE" != "200" ] && [ -n "\$TARGET_IP" ]; then
+                                        HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" http://\${TARGET_IP}:8081/actuator/health 2>/dev/null || true)
+                                    fi
+
                                     if [ "\$HTTP_CODE" = "200" ]; then
                                         HEALTH_SUCCESS=true
                                         break
                                     fi
-                                    echo "Spring Boot 구동 확인 중... (HTTP Status: \$HTTP_CODE, 시도 \$retry/15)"
+                                    echo "Spring Boot 구동 확인 중... (HTTP Status: \${HTTP_CODE:-000}, 시도 \$retry/20)"
                                 done
 
                                 if [ "\$HEALTH_SUCCESS" = "true" ]; then
