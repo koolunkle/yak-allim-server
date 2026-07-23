@@ -24,20 +24,29 @@ class FirebaseMessagingConfig(
 
     @PostConstruct
     fun init() {
-        try {
-            if (FirebaseApp.getApps().isEmpty()) {
-                val resource = resourceLoader.getResource(firebaseKeyPath)
+        if (FirebaseApp.getApps().isEmpty()) {
+            val resource = resourceLoader.getResource(firebaseKeyPath)
+            if (!resource.exists()) {
+                throw IllegalStateException("Firebase 키 파일이 존재하지 않습니다. 설정된 경로: $firebaseKeyPath")
+            }
+            try {
                 val options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(resource.inputStream))
                     .build()
                 FirebaseApp.initializeApp(options)
                 log.info("Firebase Application 초기화 완료 (파일 경로: {})", firebaseKeyPath)
+            } catch (e: Exception) {
+                log.error("Firebase Application 초기화 중 오류 발생 (파일 경로: {})", firebaseKeyPath, e)
+                throw IllegalStateException("Firebase App 초기화 실패 (파일 경로: $firebaseKeyPath)", e)
             }
-        } catch (e: Exception) {
-            log.error("Firebase Application 초기화 중 오류 발생 (파일 경로: {})", firebaseKeyPath, e)
         }
     }
 
     @Bean
-    fun firebaseMessaging(): FirebaseMessaging = FirebaseMessaging.getInstance()
+    fun firebaseMessaging(): FirebaseMessaging {
+        check(FirebaseApp.getApps().isNotEmpty()) {
+            "FirebaseApp이 초기화되지 않아 FirebaseMessaging Bean을 생성할 수 없습니다. (키 경로: $firebaseKeyPath)"
+        }
+        return FirebaseMessaging.getInstance()
+    }
 }

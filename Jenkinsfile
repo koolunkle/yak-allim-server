@@ -75,19 +75,24 @@ pipeline {
                                 docker stop \${TARGET_NAME} 2>/dev/null || true
                                 docker rm -f \${TARGET_NAME} 2>/dev/null || true
 
-                                # 5. 신규 컨테이너 실행
-                                docker run -d \
+                                # 5. 신규 컨테이너 생성 및 자격 증명/모델 파일 주입
+                                docker create \
                                     --name \${TARGET_NAME} \
                                     --restart unless-stopped \
                                     -p \${TARGET_PORT}:8081 \
-                                    -v "${deployDir}/yak-allim-firebase-key.json:/app/yak-allim-firebase-key.json" \
-                                    -v "${deployDir}/models:/app/models" \
                                     ${env.IMAGE_NAME} \
                                     --server.port=8081 \
                                     --notification.firebase.key-path="file:/app/yak-allim-firebase-key.json" \
                                     --ocr.engine.onnx.detection-model-path="file:/app/models/ch_PP-OCRv4_det_infer.onnx" \
                                     --ocr.engine.onnx.recognition-model-path="file:/app/models/korean_PP-OCRv4_rec_infer.onnx" \
                                     --ocr.engine.onnx.recognition-dictionary-path="file:/app/models/korean_dict.txt"
+
+                                docker cp "${deployDir}/yak-allim-firebase-key.json" \${TARGET_NAME}:/app/yak-allim-firebase-key.json
+                                if [ -d "${deployDir}/models" ]; then
+                                    docker cp "${deployDir}/models/." \${TARGET_NAME}:/app/models/
+                                fi
+
+                                docker start \${TARGET_NAME}
 
                                 # 6. Spring Boot Actuator HTTP 헬스 체크 진행
                                 HEALTH_SUCCESS=false
@@ -189,19 +194,24 @@ pipeline {
                                 docker rm -f \$targetName
                                 \$ErrorActionPreference = 'Stop'
 
-                                # 5. 신규 컨테이너 실행
-                                docker run -d `
+                                # 5. 신규 컨테이너 생성 및 자격 증명/모델 파일 주입
+                                docker create `
                                     --name \$targetName `
                                     --restart unless-stopped `
                                     -p "\${targetPort}:8081" `
-                                    -v "${deployDir}\\yak-allim-firebase-key.json:/app/yak-allim-firebase-key.json" `
-                                    -v "${deployDir}\\models:/app/models" `
                                     ${env.IMAGE_NAME} `
                                     --server.port=8081 `
                                     --notification.firebase.key-path="file:/app/yak-allim-firebase-key.json" `
                                     --ocr.engine.onnx.detection-model-path="file:/app/models/ch_PP-OCRv4_det_infer.onnx" `
                                     --ocr.engine.onnx.recognition-model-path="file:/app/models/korean_PP-OCRv4_rec_infer.onnx" `
                                     --ocr.engine.onnx.recognition-dictionary-path="file:/app/models/korean_dict.txt"
+
+                                docker cp "${deployDir}\\yak-allim-firebase-key.json" "\${targetName}:/app/yak-allim-firebase-key.json"
+                                if (Test-Path \$modelsDir) {
+                                    docker cp "\$modelsDir\\." "\${targetName}:/app/models/"
+                                }
+
+                                docker start \$targetName
 
                                 # 6. Spring Boot Actuator HTTP 헬스 체크 진행
                                 \$healthSuccess = \$false
