@@ -310,6 +310,8 @@ pipeline {
         // 빌드 성공 알림
         success {
             script {
+                def channel = env.SLACK_CHANNEL ?: '#app-deploy-alerts'
+                def credId = env.SLACK_CREDENTIAL_ID ?: 'slack-bot-token'
                 def successMessage = """
                     *:white_check_mark: [SUCCESS] Build & Deploy Completed*
                     • *Job:* `${env.JOB_NAME}`
@@ -317,13 +319,15 @@ pipeline {
                     • *Duration:* ${currentBuild.durationString}
                     • *Link:* <${env.BUILD_URL}|Open Build> | <${env.BUILD_URL}console|Console Log>
                 """.stripIndent().trim()
-                slackSend botUser: true, color: '#36a64f', channel: env.SLACK_CHANNEL, tokenCredentialId: env.SLACK_CREDENTIAL_ID, message: successMessage
+                slackSend botUser: true, color: '#36a64f', channel: channel, tokenCredentialId: credId, message: successMessage
             }
         }
 
         // 빌드 실패 알림
         failure {
             script {
+                def channel = env.SLACK_CHANNEL ?: '#app-deploy-alerts'
+                def credId = env.SLACK_CREDENTIAL_ID ?: 'slack-bot-token'
                 def failureMessage = """
                     *:x: [FAILURE] Build & Deploy Failed*
                     • *Job:* `${env.JOB_NAME}`
@@ -335,7 +339,7 @@ pipeline {
                     *Check Logs:*
                     실패한 빌드의 상세 에러 원인은 위 Console Log 링크에서 확인하실 수 있습니다.
                 """.stripIndent().trim()
-                slackSend botUser: true, color: '#FF0000', channel: env.SLACK_CHANNEL, tokenCredentialId: env.SLACK_CREDENTIAL_ID, message: failureMessage
+                slackSend botUser: true, color: '#FF0000', channel: channel, tokenCredentialId: credId, message: failureMessage
             }
         }
     }
