@@ -1,10 +1,10 @@
-version: '3.8'
+name: yak-allim
 
 services:
   # OCR 분석 및 작업 자동화 엔진
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
-    container_name: n8n
+    container_name: yak-allim-n8n
     restart: always
     ports:
       - "127.0.0.1:5678:5678"
@@ -23,18 +23,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.jenkins
-    container_name: jenkins
+    image: yak-allim-jenkins:latest
+    container_name: yak-allim-jenkins
     user: root
     restart: always
     ports:
       - "9090:8080"
       - "50000:50000"
     environment:
-      - ANDROID_HOME=/var/jenkins_home/android-sdk
+      - ANDROID_HOME=/opt/android-sdk
     volumes:
       - jenkins_home:/var/jenkins_home
+      - jenkins_android_sdk:/opt/android-sdk
       - "${DEPLOY_DIR:-C:/yakallim-deploy}:/var/jenkins_home/deploy"
-      - "${ANDROID_SDK_PATH:-C:/Users/a4336/AppData/Local/Android/Sdk}:/var/jenkins_home/android-sdk"
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app-network
@@ -49,3 +50,4 @@ networks:
 volumes:
   jenkins_home:
     external: true
+  jenkins_android_sdk:

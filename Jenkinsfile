@@ -6,7 +6,7 @@ pipeline {
         JENKINS_NODE_COOKIE = 'dontKillMe'
         SLACK_CREDENTIAL_ID = 'slack-bot-token'
         SLACK_CHANNEL       = '#app-deploy-alerts'
-        N8N_WEBHOOK_URL     = 'http://n8n:5678/webhook/ocr'
+        N8N_WEBHOOK_URL     = 'http://yak-allim-n8n:5678/webhook/ocr'
     }
 
     stages {
@@ -130,13 +130,11 @@ pipeline {
                                     echo "=== 신규 컨테이너(\${TARGET_NAME}) 정상 구동 완료 (PORT: \${TARGET_PORT}) ==="
                                     docker logs --tail 25 \${TARGET_NAME}
 
-                                    # 7. Nginx 포트 스위칭 및 Reload (Nginx 환경이 구성되어 있을 경우)
-                                    if command -v nginx >/dev/null 2>&1 || [ -d "/etc/nginx" ]; then
-                                        echo "=== Nginx 포트 스위칭 (Target: \${TARGET_PORT}) 및 Reload 진행 ==="
-                                        if [ -d "/etc/nginx/conf.d" ]; then
-                                            echo "set \\\$service_url http://127.0.0.1:\${TARGET_PORT};" | sudo tee /etc/nginx/conf.d/service-url.inc >/dev/null 2>&1 || echo "set \\\$service_url http://127.0.0.1:\${TARGET_PORT};" > /etc/nginx/conf.d/service-url.inc 2>/dev/null || true
-                                        fi
-                                        sudo nginx -s reload 2>/dev/null || nginx -s reload 2>/dev/null || echo "Nginx reload 권한 또는 실행 실패 (수동확인 필요)"
+                                    # 7. Nginx 포트 스위칭
+                                    echo "=== Nginx 포트 스위칭 (Target: \${TARGET_PORT}) 진행 ==="
+                                    echo "set \\\$service_url http://127.0.0.1:\${TARGET_PORT};" > "${deployDir}/service-url.inc"
+                                    if [ -d "/etc/nginx/conf.d" ]; then
+                                        echo "set \\\$service_url http://127.0.0.1:\${TARGET_PORT};" > /etc/nginx/conf.d/service-url.inc 2>/dev/null || true
                                     fi
 
                                     # 8. 이전 구버전 컨테이너 정지 및 삭제
@@ -264,15 +262,10 @@ pipeline {
                                     Write-Host "=== 신규 컨테이너(\${targetName}) 정상 구동 완료 (PORT: \${targetPort}) ==="
                                     docker logs --tail 25 \$targetName
 
-                                    # 7. Nginx 포트 스위칭 및 Reload (Windows/외부 Nginx 환경 구성 시)
-                                    \$nginxIncPath = "C:/nginx/conf/service-url.inc"
-                                    if (Test-Path \$nginxIncPath) {
-                                        Write-Host "=== Nginx 포트 스위칭 (Target: \${targetPort}) 및 Reload 진행 ==="
-                                        "set `$service_url http://127.0.0.1:\${targetPort};" | Out-File -Encoding utf8 \$nginxIncPath
-                                        \$ErrorActionPreference = 'SilentlyContinue'
-                                        nginx -s reload
-                                        \$ErrorActionPreference = 'Stop'
-                                    }
+                                    # 7. Nginx 포트 스위칭
+                                    \$deployIncPath = "${deployDir}\\service-url.inc"
+                                    Write-Host "=== Nginx 포트 스위칭 (Target: \${targetPort}) 진행 ==="
+                                    "set `$service_url http://127.0.0.1:\${targetPort};" | Out-File -Encoding utf8 \$deployIncPath
 
                                     # 8. 이전 구버전 컨테이너 정지 및 삭제
                                     \$ErrorActionPreference = 'SilentlyContinue'
