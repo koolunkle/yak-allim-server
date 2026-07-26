@@ -41,6 +41,9 @@ class N8nOcrClient(
 
             val headers = HttpHeaders()
             headers.contentType = MediaType.MULTIPART_FORM_DATA
+            if (ocrProperties.n8n.webhookSecret.isNotBlank()) {
+                headers.set("X-N8N-WEBHOOK-SECRET", ocrProperties.n8n.webhookSecret)
+            }
 
             val body = LinkedMultiValueMap<String, Any>()
 

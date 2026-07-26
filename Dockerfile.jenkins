@@ -1,0 +1,7 @@
+FROM jenkins/jenkins:lts
+USER root
+
+# 젠킨스 컨테이너 내부에 docker CLI 패키지 설치
+RUN apt-get update && \
+    apt-get install -y docker.io && \
+    rm -rf /var/lib/apt/lists/*

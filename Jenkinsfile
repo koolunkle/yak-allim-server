@@ -6,6 +6,7 @@ pipeline {
         JENKINS_NODE_COOKIE = 'dontKillMe'
         SLACK_CREDENTIAL_ID = 'slack-bot-token'
         SLACK_CHANNEL       = '#app-deploy-alerts'
+        N8N_WEBHOOK_URL     = 'http://n8n:5678/webhook/ocr'
     }
 
     stages {
@@ -88,13 +89,15 @@ pipeline {
                                 docker create \
                                     --name \${TARGET_NAME} \
                                     --restart unless-stopped \
+                                    --network app-network \
                                     -p \${TARGET_PORT}:8081 \
                                     ${env.IMAGE_NAME} \
                                     --server.port=8081 \
                                     --notification.firebase.key-path="file:/app/yak-allim-firebase-key.json" \
                                     --ocr.engine.onnx.detection-model-path="file:/app/models/ch_PP-OCRv4_det_infer.onnx" \
                                     --ocr.engine.onnx.recognition-model-path="file:/app/models/korean_PP-OCRv4_rec_infer.onnx" \
-                                    --ocr.engine.onnx.recognition-dictionary-path="file:/app/models/korean_dict.txt"
+                                    --ocr.engine.onnx.recognition-dictionary-path="file:/app/models/korean_dict.txt" \
+                                    --ocr.n8n.webhook-url="${env.N8N_WEBHOOK_URL}"
 
                                 docker cp "${deployDir}/yak-allim-firebase-key.json" \${TARGET_NAME}:/app/yak-allim-firebase-key.json
                                 if [ -d "${deployDir}/models" ]; then
@@ -223,13 +226,15 @@ pipeline {
                                 docker create `
                                     --name \$targetName `
                                     --restart unless-stopped `
+                                    --network app-network `
                                     -p "\${targetPort}:8081" `
                                     ${env.IMAGE_NAME} `
                                     --server.port=8081 `
                                     --notification.firebase.key-path="file:/app/yak-allim-firebase-key.json" `
                                     --ocr.engine.onnx.detection-model-path="file:/app/models/ch_PP-OCRv4_det_infer.onnx" `
                                     --ocr.engine.onnx.recognition-model-path="file:/app/models/korean_PP-OCRv4_rec_infer.onnx" `
-                                    --ocr.engine.onnx.recognition-dictionary-path="file:/app/models/korean_dict.txt"
+                                    --ocr.engine.onnx.recognition-dictionary-path="file:/app/models/korean_dict.txt" `
+                                    --ocr.n8n.webhook-url="${env.N8N_WEBHOOK_URL}"
 
                                 docker cp "${deployDir}\\yak-allim-firebase-key.json" "\${targetName}:/app/yak-allim-firebase-key.json"
                                 if (Test-Path \$modelsDir) {
