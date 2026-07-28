@@ -1,6 +1,7 @@
 package com.example.yakallim.ocr.infrastructure.client
 
 import com.example.yakallim.notification.domain.NotificationClient
+import com.example.yakallim.ocr.application.OcrErrorMessageResolver
 import com.example.yakallim.ocr.application.OcrProgressManager
 import com.example.yakallim.ocr.domain.model.PipelineStep
 import com.example.yakallim.ocr.domain.repository.OcrJobRepository
@@ -61,9 +62,10 @@ class N8nOcrClient(
             ocrProgressManager.publishProgress(jobId, PipelineStep.TEXT_RECOGNITION)
         } catch (e: Exception) {
             log.error("Failed to send image to n8n", e)
-            val errorMessage = e.message ?: "Failed to connect to n8n"
-            ocrJobRepository.updateToFailed(jobId, errorMessage)
-            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, errorMessage)
+            val rawErrorMessage = e.message ?: "Failed to connect to n8n"
+            val userFacingMessage = OcrErrorMessageResolver.resolve(e)
+            ocrJobRepository.updateToFailed(jobId, rawErrorMessage)
+            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, userFacingMessage)
 
             onDispatchFailure(jobId)
 
@@ -71,8 +73,13 @@ class N8nOcrClient(
                 notifier.notify(
                     token = fcmToken,
                     title = "복약 안내서 분석 실패",
-                    body = errorMessage,
-                    data = mapOf("jobId" to jobId, "status" to "FAILED", "error" to errorMessage)
+                    body = userFacingMessage,
+                    data = mapOf(
+                        "jobId" to jobId,
+                        "status" to "FAILED",
+                        "errorCode" to "N8N_DISPATCH_FAILED",
+                        "message" to userFacingMessage
+                    )
                 )
             }
         }

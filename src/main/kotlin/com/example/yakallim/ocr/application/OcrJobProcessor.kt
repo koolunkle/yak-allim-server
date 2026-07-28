@@ -108,15 +108,21 @@ class OcrJobProcessor(
             log.info("OCR 작업 취소: 작업ID='{}', 사유='{}'", jobId, e.message)
             ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, "작업이 취소되었습니다.")
         } catch (e: Exception) {
-            val errorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."
+            val rawErrorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."
+            val userFacingMessage = OcrErrorMessageResolver.resolve(e)
             log.error("비동기 OCR 처리 실패: {}", fileName, e)
-            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, errorMessage)
-            ocrJobRepository.updateToFailed(jobId, errorMessage)
+            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, userFacingMessage)
+            ocrJobRepository.updateToFailed(jobId, rawErrorMessage)
             notifier.notify(
                 token = token ?: "",
                 title = "복약 안내서 분석 실패",
-                body = errorMessage,
-                data = mapOf("jobId" to jobId, "status" to "FAILED", "error" to errorMessage)
+                body = userFacingMessage,
+                data = mapOf(
+                    "jobId" to jobId,
+                    "status" to "FAILED",
+                    "errorCode" to "OCR_PROCESSING_FAILED",
+                    "message" to userFacingMessage
+                )
             )
         }
     }
