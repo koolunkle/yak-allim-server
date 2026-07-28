@@ -13,10 +13,16 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // OS별 빌드 실행
                     if (isUnix()) {
                         sh 'chmod +x gradlew'
-                        sh './gradlew clean bootJar'
+                        // Dynamic Docker Container Agent: --volumes-from으로 Jenkins 볼륨을 공유하여 JDK 17 빌드 수행 후 자동 파기
+                        sh """
+                            docker run --rm \
+                                --volumes-from yak-allim-jenkins \
+                                -w "${env.WORKSPACE}" \
+                                eclipse-temurin:17-jdk \
+                                sh -c "./gradlew clean bootJar"
+                        """
                     } else {
                         bat 'gradlew.bat clean bootJar'
                     }
@@ -112,18 +118,21 @@ pipeline {
 
                                 TARGET_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \${TARGET_NAME} 2>/dev/null || true)
 
-                                for retry in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-                                    sleep 3
-                                    HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\${TARGET_PORT}/actuator/health 2>/dev/null || true)
+                                for retry in \$(seq 1 40); do
+                                    sleep 4
+                                    HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" http://\${TARGET_NAME}:8081/actuator/health 2>/dev/null || true)
                                     if [ "\$HTTP_CODE" != "200" ] && [ -n "\$TARGET_IP" ]; then
                                         HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" http://\${TARGET_IP}:8081/actuator/health 2>/dev/null || true)
+                                    fi
+                                    if [ "\$HTTP_CODE" != "200" ]; then
+                                        HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\${TARGET_PORT}/actuator/health 2>/dev/null || true)
                                     fi
 
                                     if [ "\$HTTP_CODE" = "200" ]; then
                                         HEALTH_SUCCESS=true
                                         break
                                     fi
-                                    echo "Spring Boot 구동 확인 중... (HTTP Status: \${HTTP_CODE:-000}, 시도 \$retry/20)"
+                                    echo "Spring Boot 구동 확인 중... (HTTP Status: \${HTTP_CODE:-000}, 시도 \$retry/40)"
                                 done
 
                                 if [ "\$HEALTH_SUCCESS" = "true" ]; then
@@ -131,11 +140,15 @@ pipeline {
                                     docker logs --tail 25 \${TARGET_NAME}
 
                                     # 7. Nginx 포트 스위칭
-                                    echo "=== Nginx 포트 스위칭 (Target: \${TARGET_PORT}) 진행 ==="
-                                    echo "set \\\$service_url http://127.0.0.1:\${TARGET_PORT};" > "${deployDir}/service-url.inc"
+                                    echo "=== Nginx 포트 스위칭 (Target: \${TARGET_NAME} / Port: \${TARGET_PORT}) 진행 ==="
+                                    printf 'set $service_url http://%s:8081;\n' "\${TARGET_NAME}" > "\${deployDir}/service-url.inc"
                                     if [ -d "/etc/nginx/conf.d" ]; then
-                                        echo "set \\\$service_url http://127.0.0.1:\${TARGET_PORT};" > /etc/nginx/conf.d/service-url.inc 2>/dev/null || true
+                                        printf 'set $service_url http://%s:8081;\n' "\${TARGET_NAME}" > /etc/nginx/conf.d/service-url.inc 2>/dev/null || true
                                     fi
+
+                                    echo "=== NGINX 설정 재설정 ==="
+                                    docker exec yak-allim-nginx nginx -s reload 2>/dev/null || true
+
 
                                     # 8. 이전 구버전 컨테이너 정지 및 삭제
                                     OLD_CONTAINER_ID=\$(docker ps --filter "name=^/\${OLD_CONTAINER_NAME}\$" --filter "status=running" -q 2>/dev/null || true)
@@ -245,8 +258,8 @@ pipeline {
                                 \$healthSuccess = \$false
                                 Write-Host "=== 신규 컨테이너(\${targetName}) Actuator HTTP 헬스 체크 진행 중... ==="
 
-                                for (\$retry = 1; \$retry -le 15; \$retry++) {
-                                    Start-Sleep -Seconds 3
+                                for (\$retry = 1; \$retry -le 40; \$retry++) {
+                                    Start-Sleep -Seconds 4
                                     try {
                                         \$res = Invoke-WebRequest -Uri "http://localhost:\${targetPort}/actuator/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
                                         if (\$res.StatusCode -eq 200) {
@@ -254,7 +267,7 @@ pipeline {
                                             break
                                         }
                                     } catch {
-                                        Write-Host "Spring Boot 구동 확인 중... (시도 \$retry/15)"
+                                        Write-Host "Spring Boot 구동 확인 중... (시도 \$retry/40)"
                                     }
                                 }
 
@@ -264,8 +277,14 @@ pipeline {
 
                                     # 7. Nginx 포트 스위칭
                                     \$deployIncPath = "${deployDir}\\service-url.inc"
-                                    Write-Host "=== Nginx 포트 스위칭 (Target: \${targetPort}) 진행 ==="
-                                    "set `$service_url http://127.0.0.1:\${targetPort};" | Out-File -Encoding utf8 \$deployIncPath
+                                    Write-Host "=== Nginx 포트 스위칭 (Target: \${targetName} / Port: \${targetPort}) 진행 ==="
+                                    [System.IO.File]::WriteAllText("\$deployIncPath", 'set $service_url http://' + "\$targetName" + ':8081;')
+
+                                    Write-Host "=== NGINX 설정 재설정 ==="
+                                    \$ErrorActionPreference = 'SilentlyContinue'
+                                    docker exec yak-allim-nginx nginx -s reload
+                                    \$ErrorActionPreference = 'Stop'
+
 
                                     # 8. 이전 구버전 컨테이너 정지 및 삭제
                                     \$ErrorActionPreference = 'SilentlyContinue'
@@ -303,36 +322,44 @@ pipeline {
         // 빌드 성공 알림
         success {
             script {
-                def channel = env.SLACK_CHANNEL ?: '#app-deploy-alerts'
-                def credId = env.SLACK_CREDENTIAL_ID ?: 'slack-bot-token'
-                def successMessage = """
-                    *:white_check_mark: [SUCCESS] Build & Deploy Completed*
-                    • *Job:* `${env.JOB_NAME}`
-                    • *Build Number:* #${env.BUILD_NUMBER}
-                    • *Duration:* ${currentBuild.durationString}
-                    • *Link:* <${env.BUILD_URL}|Open Build> | <${env.BUILD_URL}console|Console Log>
-                """.stripIndent().trim()
-                slackSend botUser: true, color: '#36a64f', channel: channel, tokenCredentialId: credId, message: successMessage
+                try {
+                    def channel = env.SLACK_CHANNEL ?: '#app-deploy-alerts'
+                    def credId = env.SLACK_CREDENTIAL_ID ?: 'slack-bot-token'
+                    def successMessage = """
+                        *:white_check_mark: [SUCCESS] Build & Deploy Completed*
+                        • *Job:* `${env.JOB_NAME}`
+                        • *Build Number:* #${env.BUILD_NUMBER}
+                        • *Duration:* ${currentBuild.durationString}
+                        • *Link:* <${env.BUILD_URL}|Open Build> | <${env.BUILD_URL}console|Console Log>
+                    """.stripIndent().trim()
+                    slackSend botUser: true, color: '#36a64f', channel: channel, tokenCredentialId: credId, message: successMessage
+                } catch (Exception e) {
+                    echo "Slack 알림 전송 건너뜀 (사유: ${e.message})"
+                }
             }
         }
 
         // 빌드 실패 알림
         failure {
             script {
-                def channel = env.SLACK_CHANNEL ?: '#app-deploy-alerts'
-                def credId = env.SLACK_CREDENTIAL_ID ?: 'slack-bot-token'
-                def failureMessage = """
-                    *:x: [FAILURE] Build & Deploy Failed*
-                    • *Job:* `${env.JOB_NAME}`
-                    • *Build Number:* #${env.BUILD_NUMBER}
-                    • *Duration:* ${currentBuild.durationString}
-                    • *Build Link:* <${env.BUILD_URL}|Open Build>
-                    • *Failed Console Log:* <${env.BUILD_URL}console|View Logs>
+                try {
+                    def channel = env.SLACK_CHANNEL ?: '#app-deploy-alerts'
+                    def credId = env.SLACK_CREDENTIAL_ID ?: 'slack-bot-token'
+                    def failureMessage = """
+                        *:x: [FAILURE] Build & Deploy Failed*
+                        • *Job:* `${env.JOB_NAME}`
+                        • *Build Number:* #${env.BUILD_NUMBER}
+                        • *Duration:* ${currentBuild.durationString}
+                        • *Build Link:* <${env.BUILD_URL}|Open Build>
+                        • *Failed Console Log:* <${env.BUILD_URL}console|View Logs>
 
-                    *Check Logs:*
-                    실패한 빌드의 상세 에러 원인은 위 Console Log 링크에서 확인하실 수 있습니다.
-                """.stripIndent().trim()
-                slackSend botUser: true, color: '#FF0000', channel: channel, tokenCredentialId: credId, message: failureMessage
+                        *Check Logs:*
+                        실패한 빌드의 상세 에러 원인은 위 Console Log 링크에서 확인하실 수 있습니다.
+                    """.stripIndent().trim()
+                    slackSend botUser: true, color: '#FF0000', channel: channel, tokenCredentialId: credId, message: failureMessage
+                } catch (Exception e) {
+                    echo "Slack 알림 전송 건너뜀 (사유: ${e.message})"
+                }
             }
         }
     }
