@@ -1,6 +1,6 @@
 package com.example.yakallim.global.exception
 
-import com.example.yakallim.ocr.domain.exception.OcrException
+import com.example.yakallim.ocr.exception.OcrException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
