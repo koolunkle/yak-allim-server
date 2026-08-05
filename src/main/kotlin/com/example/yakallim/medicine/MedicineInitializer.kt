@@ -30,12 +30,12 @@ class MedicineInitializer(
                     }
                 }
                 medicineRepository.saveAll(entities)
-                log.info("약품 데이터 초기화 완료 (총 {}건, 파일 경로: {})", entities.size, medicineProperties.dataPath)
+                log.info("Medicine data initialized successfully (total {} records, path: {})", entities.size, medicineProperties.dataPath)
             } else {
-                log.info("약품 데이터 조회 완료 (파일 경로: {})", medicineProperties.dataPath)
+                log.info("Medicine data already exists (path: {})", medicineProperties.dataPath)
             }
         } catch (e: Exception) {
-            log.error("약품 데이터 초기화 실패 (파일 경로: {})", medicineProperties.dataPath, e)
+            log.error("Failed to initialize medicine data (path: {})", medicineProperties.dataPath, e)
         }
     }
 }

@@ -51,7 +51,7 @@ class JobProcessor(
         }
 
         if (ocrJobRepository.isCancelled(jobId)) {
-            log.info("OCR 작업 시작 전 취소: 작업ID='{}'", jobId)
+            log.info("OCR job cancelled before processing: jobId='{}'", jobId)
             ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, "작업이 취소되었습니다.")
             return
         }
@@ -88,7 +88,7 @@ class JobProcessor(
             ocrProgressManager.publishProgress(jobId, PipelineStep.COMPLETED, response.message)
             ocrJobRepository.updateToCompleted(jobId, response)
 
-            log.info("복약 안내서 분석 완료: {}", fileName)
+            log.info("Prescription OCR processing completed: {}", fileName)
             prescriptions.forEachIndexed { idx, item ->
                 log.info(
                     "  [{}] 약품명: '{}', 복용량: '{}', 하루 횟수: '{}회', 복용 기간: '{}일'",
@@ -105,12 +105,12 @@ class JobProcessor(
                 data = mapOf("jobId" to jobId, "status" to "COMPLETED", "message" to response.message)
             )
         } catch (e: IllegalStateException) {
-            log.info("OCR 작업 취소: 작업ID='{}', 사유='{}'", jobId, e.message)
+            log.info("OCR job cancelled: jobId='{}', reason='{}'", jobId, e.message)
             ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, "작업이 취소되었습니다.")
         } catch (e: Exception) {
             val rawErrorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."
             val userFacingMessage = ErrorMessageResolver.resolve(e)
-            log.error("비동기 OCR 처리 실패: {}", fileName, e)
+            log.error("Async OCR processing failed for file: {}", fileName, e)
             ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, userFacingMessage)
             ocrJobRepository.updateToFailed(jobId, rawErrorMessage)
             notifier.notify(

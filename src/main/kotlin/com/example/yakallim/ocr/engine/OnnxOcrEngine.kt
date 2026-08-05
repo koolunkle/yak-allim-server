@@ -115,7 +115,7 @@ class OnnxOcrEngine(
                 }.awaitAll().filterNotNull()
             }
         }.onFailure { exception ->
-            log.error("OCR 분석 처리 실패", exception)
+            log.error("Failed to execute OCR inference", exception)
         }.getOrElse { exception ->
             throw RuntimeException("OCR 분석 처리 실패", exception)
         }
@@ -143,7 +143,7 @@ class OnnxOcrEngine(
                 isReady = true
             }
         }.onFailure { exception ->
-            log.error("ONNX OCR 엔진 초기화 실패", exception)
+            log.error("Failed to initialize ONNX OCR engine", exception)
         }
     }
 
@@ -160,7 +160,7 @@ class OnnxOcrEngine(
                 }
             }
         }.onFailure { exception ->
-            log.error("OCR 문자 사전 조회 실패", exception)
+            log.error("Failed to load OCR character dictionary", exception)
         }
     }
 
@@ -168,7 +168,7 @@ class OnnxOcrEngine(
         val targetResource = resourceLoader.getResource(resourcePath)
         if (targetResource.exists()) targetResource.inputStream.use { it.readBytes() } else null
     }.onFailure { exception ->
-        log.error("파일 조회 실패", exception)
+        log.error("Failed to access file resource", exception)
     }.getOrNull()
 
     private fun detectRegions(sourceImage: BufferedImage): List<List<TextBlock.Coordinate>> {
@@ -505,13 +505,13 @@ class OnnxOcrEngine(
     @PreDestroy
     override fun close() {
         recSession?.let { session ->
-            runCatching { session.close() }.onFailure { log.error("ONNX Recognition Session 종료 실패", it) }
+            runCatching { session.close() }.onFailure { log.error("Failed to close ONNX recognition session", it) }
         }
         detSession?.let { session ->
-            runCatching { session.close() }.onFailure { log.error("ONNX Detection Session 종료 실패", it) }
+            runCatching { session.close() }.onFailure { log.error("Failed to close ONNX detection session", it) }
         }
         env?.let { environment ->
-            runCatching { environment.close() }.onFailure { log.error("ONNX Environment 해제 실패", it) }
+            runCatching { environment.close() }.onFailure { log.error("Failed to release ONNX environment", it) }
         }
     }
 }

@@ -18,7 +18,7 @@ class FcmNotificationClient(
 
     override fun notify(token: String, title: String, body: String, data: Map<String, String>) {
         if (token.isBlank()) {
-            log.warn("FCM 토큰 누락으로 인한 알림 전송 생략")
+            log.warn("FCM notification skipped: token missing")
             return
         }
 
@@ -32,9 +32,9 @@ class FcmNotificationClient(
 
             firebaseMessaging.send(message)
         }.onSuccess {
-            log.info("FCM 전송 완료: [제목] {}", title)
+            log.info("FCM notification sent successfully: [title] {}", title)
         }.onFailure { e ->
-            log.error("FCM 전송 실패: [제목] {}, [토큰] {}", title, token, e)
+            log.error("Failed to send FCM notification: [title] {}, [token] {}", title, token, e)
         }
     }
 }

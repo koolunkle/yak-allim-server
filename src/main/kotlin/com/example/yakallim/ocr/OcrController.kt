@@ -71,7 +71,7 @@ class OcrController(
         val configuredSecret = ocrProperties.n8n.webhookSecret.trim()
         val receivedSecret = webhookSecret?.trim()
         if (configuredSecret.isNotBlank() && receivedSecret != configuredSecret) {
-            log.warn("Webhook secret 검증 실패: 허용되지 않은 웹훅 요청입니다.")
+            log.warn("Webhook secret verification failed: unauthorized request")
             throw OcrException.IllegalJobStateException("유효하지 않은 webhook 요청입니다.")
         }
 

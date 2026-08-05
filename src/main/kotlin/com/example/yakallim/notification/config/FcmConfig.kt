@@ -34,9 +34,9 @@ class FcmConfig(
                     .setCredentials(GoogleCredentials.fromStream(resource.inputStream))
                     .build()
                 FirebaseApp.initializeApp(options)
-                log.info("Firebase Application 초기화 완료 (파일 경로: {})", firebaseKeyPath)
+                log.info("Firebase Application initialized successfully (path: {})", firebaseKeyPath)
             } catch (e: Exception) {
-                log.error("Firebase Application 초기화 중 오류 발생 (파일 경로: {})", firebaseKeyPath, e)
+                log.error("Failed to initialize Firebase Application (path: {})", firebaseKeyPath, e)
                 throw IllegalStateException("Firebase App 초기화 실패 (파일 경로: $firebaseKeyPath)", e)
             }
         }

@@ -30,7 +30,7 @@ class ProgressManager(
         keepAliveScheduler.scheduleAtFixedRate({
             sendKeepAliveToAll()
         }, 15, 15, TimeUnit.SECONDS)
-        log.info("SSE Keep-Alive Heartbeat 스케줄러 구동 완료 (주기: 15초)")
+        log.info("SSE Keep-Alive Heartbeat scheduler started (interval: 15s)")
     }
 
     @PreDestroy
@@ -43,7 +43,7 @@ class ProgressManager(
         } catch (_: InterruptedException) {
             keepAliveScheduler.shutdownNow()
         }
-        log.info("SSE Keep-Alive Heartbeat 스케줄러 정상 종료")
+        log.info("SSE Keep-Alive Heartbeat scheduler stopped")
     }
 
     fun registerEmitter(jobId: String, timeoutMs: Long = 180000L): SseEmitter {

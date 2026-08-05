@@ -92,7 +92,7 @@ abstract class OcrService(
         }
 
         ocrJobRepository.updateToCancelled(jobId)
-        log.info("OCR 작업 취소 요청 완료: 작업ID='{}' (이전 상태: {})", jobId, job.status)
+        log.info("OCR job cancellation requested: jobId='{}' (previous status: {})", jobId, job.status)
     }
 
     companion object {

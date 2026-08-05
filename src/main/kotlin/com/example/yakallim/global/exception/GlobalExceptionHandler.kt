@@ -15,7 +15,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(OcrException::class)
     fun handleOcrException(ex: OcrException): ResponseEntity<ErrorResponse> {
-        log.error("OCR API 예외 발생: [{}], 메시지: {}", ex.status, ex.message)
+        log.error("OCR API exception occurred: [{}], message: {}", ex.status, ex.message)
         val response = ErrorResponse(
             status = ex.status.value(),
             error = ex.status.reasonPhrase,
@@ -26,7 +26,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception::class)
     fun handleGeneralException(ex: Exception): ResponseEntity<ErrorResponse> {
-        log.error("처리되지 않은 서버 내부 예외 발생", ex)
+        log.error("Unhandled internal server exception occurred", ex)
         val status = HttpStatus.INTERNAL_SERVER_ERROR
         val response = ErrorResponse(
             status = status.value(),
@@ -38,6 +38,6 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(AsyncRequestNotUsableException::class)
     fun handleAsyncRequestNotUsableException() {
-        log.warn("클라이언트 연결 종료로 인해 SSE 스트림을 더 이상 사용할 수 없습니다.")
+        log.warn("SSE stream unavailable due to client disconnect")
     }
 }
