@@ -3,12 +3,12 @@ package com.example.yakallim.ocr.engine
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
-import com.example.yakallim.ocr.service.ProgressManager
-import com.example.yakallim.ocr.engine.OcrEngine
-import com.example.yakallim.ocr.model.BoundingBox
-import com.example.yakallim.ocr.model.OcrPipelineStep
-import com.example.yakallim.ocr.model.TextBlock
 import com.example.yakallim.ocr.config.OcrProperties
+import com.example.yakallim.ocr.engine.OcrEngine
+import com.example.yakallim.ocr.model.OcrBoundingBox
+import com.example.yakallim.ocr.model.OcrPipelineStep
+import com.example.yakallim.ocr.model.OcrTextBlock
+import com.example.yakallim.ocr.service.OcrProgressManager
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +32,7 @@ import javax.imageio.ImageIO
 class OnnxOcrEngine(
     private val resourceLoader: ResourceLoader,
     private val ocrProperties: OcrProperties,
-    private val ocrProgressManager: ProgressManager
+    private val ocrProgressManager: OcrProgressManager
 ) : OcrEngine, AutoCloseable {
 
     companion object {
@@ -73,7 +73,7 @@ class OnnxOcrEngine(
     private var vocab: List<String> = emptyList()
     private var isReady = false
 
-    override fun runOcr(imageStream: InputStream, jobId: String?): List<TextBlock> {
+    override fun runOcr(imageStream: InputStream, jobId: String?): List<OcrTextBlock> {
         if (!isReady) return emptyList()
         return runCatching {
             val sourceImage = ImageIO.read(imageStream) ?: throw IllegalArgumentException("유효하지 않은 이미지 스트림입니다.")
@@ -86,15 +86,15 @@ class OnnxOcrEngine(
             val recognitionInputs = detectedTextRegions.flatMap { regionCoordinates ->
                 val croppedRegionImage = cropRegion(sourceImage, regionCoordinates)
                 val segmentedColumns = splitSegments(croppedRegionImage)
-                val regionBoundingBox = BoundingBox.from(regionCoordinates)
+                val regionBoundingBox = OcrBoundingBox.from(regionCoordinates)
 
                 segmentedColumns.map { column ->
                     val segmentWidth = column.image.width
                     val segmentCoordinateBounds = listOf(
-                        TextBlock.Coordinate(regionBoundingBox.minX + column.offsetX, regionBoundingBox.minY),
-                        TextBlock.Coordinate(regionBoundingBox.minX + column.offsetX + segmentWidth, regionBoundingBox.minY),
-                        TextBlock.Coordinate(regionBoundingBox.minX + column.offsetX + segmentWidth, regionBoundingBox.maxY),
-                        TextBlock.Coordinate(regionBoundingBox.minX + column.offsetX, regionBoundingBox.maxY)
+                        OcrTextBlock.Coordinate(regionBoundingBox.minX + column.offsetX, regionBoundingBox.minY),
+                        OcrTextBlock.Coordinate(regionBoundingBox.minX + column.offsetX + segmentWidth, regionBoundingBox.minY),
+                        OcrTextBlock.Coordinate(regionBoundingBox.minX + column.offsetX + segmentWidth, regionBoundingBox.maxY),
+                        OcrTextBlock.Coordinate(regionBoundingBox.minX + column.offsetX, regionBoundingBox.maxY)
                     )
                     RecognitionInput(column.image, segmentCoordinateBounds)
                 }
@@ -109,7 +109,7 @@ class OnnxOcrEngine(
                     async {
                         val recognitionResult = recognize(input.image)
                         recognitionResult.text.takeIf { it.isNotBlank() }?.let {
-                            TextBlock(it, recognitionResult.confidence, input.bounds)
+                            OcrTextBlock(it, recognitionResult.confidence, input.bounds)
                         }
                     }
                 }.awaitAll().filterNotNull()
@@ -171,7 +171,7 @@ class OnnxOcrEngine(
         log.error("Failed to access file resource", exception)
     }.getOrNull()
 
-    private fun detectRegions(sourceImage: BufferedImage): List<List<TextBlock.Coordinate>> {
+    private fun detectRegions(sourceImage: BufferedImage): List<List<OcrTextBlock.Coordinate>> {
         val environment = env ?: return createFallbackBounds(sourceImage)
         val session = detSession ?: return createFallbackBounds(sourceImage)
 
@@ -195,22 +195,22 @@ class OnnxOcrEngine(
         return extractedBoundingBoxes.ifEmpty { createFallbackBounds(sourceImage) }
     }
 
-    private fun createFallbackBounds(sourceImage: BufferedImage): List<List<TextBlock.Coordinate>> {
+    private fun createFallbackBounds(sourceImage: BufferedImage): List<List<OcrTextBlock.Coordinate>> {
         return listOf(
             listOf(
-                TextBlock.Coordinate(0, 0),
-                TextBlock.Coordinate(sourceImage.width, 0),
-                TextBlock.Coordinate(sourceImage.width, sourceImage.height),
-                TextBlock.Coordinate(0, sourceImage.height)
+                OcrTextBlock.Coordinate(0, 0),
+                OcrTextBlock.Coordinate(sourceImage.width, 0),
+                OcrTextBlock.Coordinate(sourceImage.width, sourceImage.height),
+                OcrTextBlock.Coordinate(0, sourceImage.height)
             )
         )
     }
 
     private fun extractRegions(
         textProbabilityMap: Array<FloatArray>, originalImageWidth: Int, originalImageHeight: Int
-    ): List<List<TextBlock.Coordinate>> {
+    ): List<List<OcrTextBlock.Coordinate>> {
         val visitedPixelMap = Array(DET_INPUT_SIZE) { BooleanArray(DET_INPUT_SIZE) }
-        val finalCoordinateBoxes = mutableListOf<List<TextBlock.Coordinate>>()
+        val finalCoordinateBoxes = mutableListOf<List<OcrTextBlock.Coordinate>>()
 
         val widthScaleRatio = originalImageWidth.toDouble() / DET_INPUT_SIZE.toDouble()
         val heightScaleRatio = originalImageHeight.toDouble() / DET_INPUT_SIZE.toDouble()
@@ -241,10 +241,10 @@ class OnnxOcrEngine(
 
                         finalCoordinateBoxes.add(
                             listOf(
-                                TextBlock.Coordinate(rescaledMinX, rescaledMinY),
-                                TextBlock.Coordinate(rescaledMaxX, rescaledMinY),
-                                TextBlock.Coordinate(rescaledMaxX, rescaledMaxY),
-                                TextBlock.Coordinate(rescaledMinX, rescaledMaxY)
+                                OcrTextBlock.Coordinate(rescaledMinX, rescaledMinY),
+                                OcrTextBlock.Coordinate(rescaledMaxX, rescaledMinY),
+                                OcrTextBlock.Coordinate(rescaledMaxX, rescaledMaxY),
+                                OcrTextBlock.Coordinate(rescaledMinX, rescaledMaxY)
                             )
                         )
                     }
@@ -337,7 +337,7 @@ class OnnxOcrEngine(
 
     private fun findComponent(
         textProbabilityMap: Array<FloatArray>, visitedPixelMap: Array<BooleanArray>, startX: Int, startY: Int
-    ): BoundingBox {
+    ): OcrBoundingBox {
         var minComponentX = startX
         var maxComponentX = startX
         var minComponentY = startY
@@ -369,10 +369,10 @@ class OnnxOcrEngine(
                 }
             }
         }
-        return BoundingBox(minComponentX, maxComponentX, minComponentY, maxComponentY)
+        return OcrBoundingBox(minComponentX, maxComponentX, minComponentY, maxComponentY)
     }
 
-    private fun cropRegion(sourceImage: BufferedImage, regionCoordinateBounds: List<TextBlock.Coordinate>): BufferedImage {
+    private fun cropRegion(sourceImage: BufferedImage, regionCoordinateBounds: List<OcrTextBlock.Coordinate>): BufferedImage {
         if (regionCoordinateBounds.isEmpty()) sourceImage.getSubimage(0, 0, 1, 1)
 
         val minCoordinateX = regionCoordinateBounds.minOf { it.x }.coerceAtLeast(0)
@@ -391,9 +391,9 @@ class OnnxOcrEngine(
         return sourceImage.getSubimage(cropStartX, cropStartY, cropRegionWidth, cropRegionHeight)
     }
 
-    private fun recognize(croppedImageSegment: BufferedImage): TextBlock {
-        val environment = env ?: return TextBlock("", 0.0f, emptyList())
-        val session = recSession ?: return TextBlock("", 0.0f, emptyList())
+    private fun recognize(croppedImageSegment: BufferedImage): OcrTextBlock {
+        val environment = env ?: return OcrTextBlock("", 0.0f, emptyList())
+        val session = recSession ?: return OcrTextBlock("", 0.0f, emptyList())
 
         val preprocessedImage = preprocessRec(croppedImageSegment)
         val imageTensorBuffer =
@@ -472,7 +472,7 @@ class OnnxOcrEngine(
         return tensorFloatBuffer
     }
 
-    private fun decode(timeStepProbabilities: Array<FloatArray>): TextBlock {
+    private fun decode(timeStepProbabilities: Array<FloatArray>): OcrTextBlock {
         val decodedCharacterIndices = mutableListOf<Int>()
         val characterConfidences = mutableListOf<Float>()
 
@@ -499,7 +499,7 @@ class OnnxOcrEngine(
 
         val overallAverageConfidence = if (characterConfidences.isNotEmpty()) characterConfidences.average().toFloat() else 0.0f
 
-        return TextBlock(finalizedRecognizedText, overallAverageConfidence, emptyList())
+        return OcrTextBlock(finalizedRecognizedText, overallAverageConfidence, emptyList())
     }
 
     @PreDestroy
@@ -518,7 +518,7 @@ class OnnxOcrEngine(
 
 private data class RecognitionInput(
     val image: BufferedImage,
-    val bounds: List<TextBlock.Coordinate>
+    val bounds: List<OcrTextBlock.Coordinate>
 )
 
 private data class SegmentedColumn(

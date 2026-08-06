@@ -1,11 +1,11 @@
 package com.example.yakallim.ocr.engine
 
-import com.example.yakallim.notification.service.NotificationClient
-import com.example.yakallim.ocr.service.ErrorMessageResolver
-import com.example.yakallim.ocr.service.ProgressManager
+import com.example.yakallim.notification.service.PushNotificationClient
+import com.example.yakallim.ocr.config.OcrProperties
+import com.example.yakallim.ocr.exception.OcrErrorMessageResolver
 import com.example.yakallim.ocr.model.OcrPipelineStep
 import com.example.yakallim.ocr.repository.OcrJobRepository
-import com.example.yakallim.ocr.config.OcrProperties
+import com.example.yakallim.ocr.service.OcrProgressManager
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.io.FileSystemResource
@@ -23,8 +23,8 @@ import java.io.File
 @Component
 class N8nOcrClient(
     private val ocrJobRepository: OcrJobRepository,
-    private val ocrProgressManager: ProgressManager,
-    @param:Qualifier("FCM_CLIENT") private val notifier: NotificationClient,
+    private val ocrProgressManager: OcrProgressManager,
+    @param:Qualifier("FCM_CLIENT") private val notifier: PushNotificationClient,
     private val ocrProperties: OcrProperties,
     @param:Qualifier("n8nRestTemplate") private val restTemplate: RestTemplate
 ) {
@@ -63,7 +63,7 @@ class N8nOcrClient(
         } catch (e: Exception) {
             log.error("Failed to send image to n8n", e)
             val rawErrorMessage = e.message ?: "Failed to connect to n8n"
-            val userFacingMessage = ErrorMessageResolver.resolve(e)
+            val userFacingMessage = OcrErrorMessageResolver.resolve(e)
             ocrJobRepository.updateToFailed(jobId, rawErrorMessage)
             ocrProgressManager.publishProgress(jobId, OcrPipelineStep.FAILED, userFacingMessage)
 

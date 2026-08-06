@@ -2,9 +2,9 @@ package com.example.yakallim.ocr.parser
 
 import com.example.yakallim.global.utils.HangulUtils
 import com.example.yakallim.medicine.service.MedicineService
-import com.example.yakallim.ocr.model.BoundingBox
-import com.example.yakallim.ocr.model.TextBlock
 import com.example.yakallim.ocr.config.OcrProperties
+import com.example.yakallim.ocr.model.OcrBoundingBox
+import com.example.yakallim.ocr.model.OcrTextBlock
 import com.example.yakallim.ocr.model.PrescribedMedicine
 import org.springframework.stereotype.Component
 import kotlin.math.abs
@@ -37,18 +37,18 @@ class PrescriptionParser(
         private val DOSING_FORM_UNIT_JAMO_MAP = setOf("정", "캡슐").associateWith { HangulUtils.normalizeToJamo(it) }
     }
 
-    fun parse(textBlocks: List<TextBlock>): List<PrescribedMedicine> {
+    fun parse(textBlocks: List<OcrTextBlock>): List<PrescribedMedicine> {
         if (textBlocks.isEmpty()) return emptyList()
 
         val tiltAngle = calculateTiltAngle(textBlocks)
         val deskewed = if (abs(tiltAngle) > 1e-4) {
             val coordinates = textBlocks.flatMap { it.bounds }
-            val boundingBox = BoundingBox.from(coordinates)
+            val boundingBox = OcrBoundingBox.from(coordinates)
             val centerX = boundingBox.centerX.toDouble()
             val centerY = boundingBox.centerY.toDouble()
 
             textBlocks.map { result ->
-                TextBlock(
+                OcrTextBlock(
                     text = result.text,
                     confidence = result.confidence,
                     bounds = rotate(result.bounds, -tiltAngle, centerX, centerY)
@@ -237,7 +237,7 @@ class PrescriptionParser(
         return if (match != null && match.second <= DOSING_UNIT_DIST_THRESHOLD) match.first else null
     }
 
-    private fun calculateTiltAngle(textBlocks: List<TextBlock>): Double {
+    private fun calculateTiltAngle(textBlocks: List<OcrTextBlock>): Double {
         val angles = textBlocks.mapNotNull { block ->
             val box = block.bounds
             if (box.size == 4) {
@@ -250,8 +250,8 @@ class PrescriptionParser(
     }
 
     private fun rotate(
-        coordinates: List<TextBlock.Coordinate>, tiltAngleRadian: Double, centerX: Double, centerY: Double
-    ): List<TextBlock.Coordinate> {
+        coordinates: List<OcrTextBlock.Coordinate>, tiltAngleRadian: Double, centerX: Double, centerY: Double
+    ): List<OcrTextBlock.Coordinate> {
         val cosValue = cos(tiltAngleRadian)
         val sinValue = sin(tiltAngleRadian)
         return coordinates.map { point ->
@@ -259,7 +259,7 @@ class PrescriptionParser(
             val dy = point.y - centerY
             val rotatedX = dx * cosValue - dy * sinValue + centerX
             val rotatedY = dx * sinValue + dy * cosValue + centerY
-            TextBlock.Coordinate(rotatedX.toInt(), rotatedY.toInt())
+            OcrTextBlock.Coordinate(rotatedX.toInt(), rotatedY.toInt())
         }
     }
 
@@ -329,10 +329,10 @@ class PrescriptionParser(
         val mergedMaxY = maxOf(currentBox.maxY, targetBox.maxY)
 
         val mergedBoundingBox = listOf(
-            TextBlock.Coordinate(mergedMinX, mergedMinY),
-            TextBlock.Coordinate(mergedMaxX, mergedMinY),
-            TextBlock.Coordinate(mergedMaxX, mergedMaxY),
-            TextBlock.Coordinate(mergedMinX, mergedMaxY)
+            OcrTextBlock.Coordinate(mergedMinX, mergedMinY),
+            OcrTextBlock.Coordinate(mergedMaxX, mergedMinY),
+            OcrTextBlock.Coordinate(mergedMaxX, mergedMaxY),
+            OcrTextBlock.Coordinate(mergedMinX, mergedMaxY)
         )
 
         val mergedText = if (targetBox.minX >= currentBox.maxX) {
@@ -352,10 +352,10 @@ class PrescriptionParser(
 private data class TextSegment(
     val text: String,
     val confidence: Float,
-    val bounds: List<TextBlock.Coordinate>,
+    val bounds: List<OcrTextBlock.Coordinate>,
     val normalizedName: String = HangulUtils.normalizeToJamo(text)
 ) {
-    val box: BoundingBox = BoundingBox.from(bounds)
+    val box: OcrBoundingBox = OcrBoundingBox.from(bounds)
 }
 
 private data class DosingToken(

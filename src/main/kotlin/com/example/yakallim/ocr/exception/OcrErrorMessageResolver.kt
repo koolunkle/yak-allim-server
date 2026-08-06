@@ -1,8 +1,6 @@
-package com.example.yakallim.ocr.service
+package com.example.yakallim.ocr.exception
 
-import com.example.yakallim.ocr.exception.OcrException
-
-object ErrorMessageResolver {
+object OcrErrorMessageResolver {
     fun resolve(e: Throwable): String {
         return when (e) {
             is OcrException.InvalidFileExtensionException -> "지원하지 않는 이미지 형식입니다. JPG 또는 PNG 이미지 파일로 다시 올려주세요."

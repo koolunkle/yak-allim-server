@@ -1,6 +1,6 @@
 package com.example.yakallim.notification.service
 
-interface NotificationClient {
+interface PushNotificationClient {
     fun notify(
         token: String,
         title: String,

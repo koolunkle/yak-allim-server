@@ -9,9 +9,9 @@ import java.nio.file.Path
 @Service
 @ConditionalOnProperty(name = ["ocr.type"], havingValue = "local", matchIfMissing = true)
 class LocalOcrService(
-    private val ocrJobProcessor: JobProcessor,
+    private val ocrJobProcessor: OcrJobProcessor,
     ocrJobRepository: OcrJobRepository,
-    ocrProgressManager: ProgressManager,
+    ocrProgressManager: OcrProgressManager,
     @Value("\${ocr.upload-dir:outputs/api-images}") uploadDirStr: String
 ) : OcrService(ocrJobRepository, ocrProgressManager, uploadDirStr) {
 

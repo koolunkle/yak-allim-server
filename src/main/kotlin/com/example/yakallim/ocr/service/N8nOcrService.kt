@@ -1,6 +1,6 @@
 package com.example.yakallim.ocr.service
 
-import com.example.yakallim.notification.service.NotificationClient
+import com.example.yakallim.notification.service.PushNotificationClient
 import com.example.yakallim.ocr.dto.OcrResultResponse
 import com.example.yakallim.ocr.engine.N8nOcrClient
 import com.example.yakallim.ocr.model.OcrPipelineStep
@@ -17,9 +17,9 @@ import java.util.concurrent.ConcurrentHashMap
 @ConditionalOnProperty(name = ["ocr.type"], havingValue = "n8n")
 class N8nOcrService(
     ocrJobRepository: OcrJobRepository,
-    ocrProgressManager: ProgressManager,
+    ocrProgressManager: OcrProgressManager,
     private val n8nOcrClient: N8nOcrClient,
-    @param:Qualifier("FCM_CLIENT") private val notifier: NotificationClient,
+    @param:Qualifier("FCM_CLIENT") private val notifier: PushNotificationClient,
     @Value("\${ocr.upload-dir:outputs/api-images}") uploadDirStr: String
 ) : OcrService(ocrJobRepository, ocrProgressManager, uploadDirStr) {
 

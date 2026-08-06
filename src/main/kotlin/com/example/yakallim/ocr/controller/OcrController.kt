@@ -5,8 +5,8 @@ import com.example.yakallim.ocr.dto.N8nCallbackRequest
 import com.example.yakallim.ocr.dto.OcrJobResponse
 import com.example.yakallim.ocr.exception.OcrException
 import com.example.yakallim.ocr.service.N8nOcrService
+import com.example.yakallim.ocr.service.OcrProgressManager
 import com.example.yakallim.ocr.service.OcrService
-import com.example.yakallim.ocr.service.ProgressManager
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -22,7 +22,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 @RequestMapping("/api/v1/ocr")
 class OcrController(
     private val ocrService: OcrService,
-    private val ocrProgressManager: ProgressManager,
+    private val ocrProgressManager: OcrProgressManager,
     private val n8nOcrServiceProvider: ObjectProvider<N8nOcrService>,
     private val ocrProperties: OcrProperties
 ) {

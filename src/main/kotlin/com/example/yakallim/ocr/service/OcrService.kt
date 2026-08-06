@@ -1,10 +1,9 @@
 package com.example.yakallim.ocr.service
 
+import com.example.yakallim.ocr.dto.OcrJobResponse
 import com.example.yakallim.ocr.exception.OcrException
 import com.example.yakallim.ocr.model.OcrPipelineStep
-import com.example.yakallim.ocr.model.OcrJobStatus
 import com.example.yakallim.ocr.repository.OcrJobRepository
-import com.example.yakallim.ocr.dto.OcrJobResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.web.multipart.MultipartFile
@@ -17,7 +16,7 @@ import java.util.UUID
 
 abstract class OcrService(
     protected val ocrJobRepository: OcrJobRepository,
-    protected val ocrProgressManager: ProgressManager,
+    protected val ocrProgressManager: OcrProgressManager,
     uploadDirStr: String
 ) {
     protected val log: Logger = LoggerFactory.getLogger(javaClass)
@@ -74,7 +73,7 @@ abstract class OcrService(
         return job
     }
 
-    protected abstract fun processJob(
+    abstract fun processJob(
         jobId: String,
         targetPath: Path,
         uniqueFileName: String,
@@ -88,7 +87,7 @@ abstract class OcrService(
         val job = ocrJobRepository.getJob(jobId)
             ?: throw OcrException.JobNotFoundException("존재하지 않는 작업ID: $jobId")
 
-        if (job.status == OcrJobStatus.COMPLETED || job.status == OcrJobStatus.FAILED) {
+        if (job.status == com.example.yakallim.ocr.model.OcrJobStatus.COMPLETED || job.status == com.example.yakallim.ocr.model.OcrJobStatus.FAILED) {
             throw OcrException.IllegalJobStateException("이미 종료된 작업은 취소할 수 없습니다. (작업ID: $jobId, 상태: ${job.status})")
         }
 

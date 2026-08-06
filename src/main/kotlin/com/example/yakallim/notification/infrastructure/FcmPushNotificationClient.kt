@@ -1,6 +1,6 @@
 package com.example.yakallim.notification.infrastructure
 
-import com.example.yakallim.notification.service.NotificationClient
+import com.example.yakallim.notification.service.PushNotificationClient
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.Notification
@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component
 
 @Component("FCM_CLIENT")
 @Profile("!test")
-class FcmNotificationClient(
+class FcmPushNotificationClient(
     private val firebaseMessaging: FirebaseMessaging
-) : NotificationClient {
+) : PushNotificationClient {
 
-    private val log = LoggerFactory.getLogger(FcmNotificationClient::class.java)
+    private val log = LoggerFactory.getLogger(FcmPushNotificationClient::class.java)
 
     override fun notify(token: String, title: String, body: String, data: Map<String, String>) {
         if (token.isBlank()) {

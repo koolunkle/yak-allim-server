@@ -1,23 +1,26 @@
 package com.example.yakallim.ocr.service
 
-import com.example.yakallim.ocr.model.OcrPipelineStep
-import com.example.yakallim.ocr.model.OcrJobStatus
-import com.example.yakallim.ocr.repository.OcrJobRepository
-import com.example.yakallim.ocr.dto.OcrJobResponse
 import com.example.yakallim.ocr.dto.OcrProgressResponse
+import com.example.yakallim.ocr.model.OcrJobStatus
+import com.example.yakallim.ocr.model.OcrPipelineStep
+import com.example.yakallim.ocr.repository.OcrJobRepository
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.IOException
-import java.util.concurrent.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 @Component
-class ProgressManager(
+class OcrProgressManager(
     private val ocrJobRepository: OcrJobRepository
 ) {
-    private val log = LoggerFactory.getLogger(ProgressManager::class.java)
+    private val log = LoggerFactory.getLogger(OcrProgressManager::class.java)
 
     private val emittersMap = ConcurrentHashMap<String, MutableList<SseEmitter>>()
     private val progressCache = ConcurrentHashMap<String, OcrProgressResponse>()

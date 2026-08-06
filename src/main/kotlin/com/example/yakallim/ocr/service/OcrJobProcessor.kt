@@ -1,8 +1,9 @@
 package com.example.yakallim.ocr.service
 
-import com.example.yakallim.notification.service.NotificationClient
+import com.example.yakallim.notification.service.PushNotificationClient
 import com.example.yakallim.ocr.dto.OcrResultResponse
 import com.example.yakallim.ocr.engine.OcrEngine
+import com.example.yakallim.ocr.exception.OcrErrorMessageResolver
 import com.example.yakallim.ocr.model.OcrPipelineStep
 import com.example.yakallim.ocr.parser.PrescriptionParser
 import com.example.yakallim.ocr.repository.OcrJobRepository
@@ -17,15 +18,15 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 @Component
-class JobProcessor(
+class OcrJobProcessor(
     private val ocrEngine: OcrEngine,
     private val ocrJobRepository: OcrJobRepository,
     private val prescriptionParser: PrescriptionParser,
-    @param:Qualifier("FCM_CLIENT") private val notifier: NotificationClient,
-    private val ocrProgressManager: ProgressManager,
+    @param:Qualifier("FCM_CLIENT") private val notifier: PushNotificationClient,
+    private val ocrProgressManager: OcrProgressManager,
     @Value("\${ocr.upload-dir:outputs/api-images}") private val uploadDirStr: String
 ) {
-    private val log = LoggerFactory.getLogger(JobProcessor::class.java)
+    private val log = LoggerFactory.getLogger(OcrJobProcessor::class.java)
     private val baseDir = Paths.get(uploadDirStr).toAbsolutePath().normalize()
 
     @Async
@@ -108,7 +109,7 @@ class JobProcessor(
             ocrProgressManager.publishProgress(jobId, OcrPipelineStep.FAILED, "작업이 취소되었습니다.")
         } catch (e: Exception) {
             val rawErrorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."
-            val userFacingMessage = ErrorMessageResolver.resolve(e)
+            val userFacingMessage = OcrErrorMessageResolver.resolve(e)
             log.error("Async OCR processing failed for file: {}", fileName, e)
             ocrProgressManager.publishProgress(jobId, OcrPipelineStep.FAILED, userFacingMessage)
             ocrJobRepository.updateToFailed(jobId, rawErrorMessage)
