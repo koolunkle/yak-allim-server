@@ -1,6 +1,6 @@
 package com.example.yakallim.ocr.service
 
-import com.example.yakallim.notification.NotificationClient
+import com.example.yakallim.notification.service.NotificationClient
 import com.example.yakallim.ocr.dto.OcrResultResponse
 import com.example.yakallim.ocr.engine.OcrEngine
 import com.example.yakallim.ocr.model.OcrPipelineStep

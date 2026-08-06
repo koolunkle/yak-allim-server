@@ -3,6 +3,7 @@ package com.example.yakallim.medicine
 import com.example.yakallim.global.utils.HangulUtils
 import com.example.yakallim.medicine.model.Medicine
 import com.example.yakallim.medicine.repository.MedicineRepository
+import com.example.yakallim.medicine.service.MedicineService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

@@ -1,8 +1,8 @@
-package com.example.yakallim.medicine
+package com.example.yakallim.medicine.service
 
 import com.example.yakallim.global.utils.HangulUtils
-import com.example.yakallim.medicine.repository.MedicineRepository
 import com.example.yakallim.medicine.config.MedicineProperties
+import com.example.yakallim.medicine.repository.MedicineRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

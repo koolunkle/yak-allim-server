@@ -1,7 +1,7 @@
 package com.example.yakallim.ocr.parser
 
 import com.example.yakallim.global.utils.HangulUtils
-import com.example.yakallim.medicine.MedicineService
+import com.example.yakallim.medicine.service.MedicineService
 import com.example.yakallim.ocr.model.BoundingBox
 import com.example.yakallim.ocr.model.TextBlock
 import com.example.yakallim.ocr.config.OcrProperties

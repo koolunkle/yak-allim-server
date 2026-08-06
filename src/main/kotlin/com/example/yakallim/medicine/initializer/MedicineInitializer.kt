@@ -1,8 +1,8 @@
-package com.example.yakallim.medicine
+package com.example.yakallim.medicine.initializer
 
+import com.example.yakallim.medicine.config.MedicineProperties
 import com.example.yakallim.medicine.model.Medicine
 import com.example.yakallim.medicine.repository.MedicineRepository
-import com.example.yakallim.medicine.config.MedicineProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.context.properties.EnableConfigurationProperties

@@ -1,4 +1,4 @@
-package com.example.yakallim.notification
+package com.example.yakallim.notification.service
 
 interface NotificationClient {
     fun notify(

@@ -1,12 +1,12 @@
-package com.example.yakallim.notification
+package com.example.yakallim.notification.infrastructure
 
-import com.example.yakallim.notification.NotificationClient
+import com.example.yakallim.notification.service.NotificationClient
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.Notification
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import org.springframework.context.annotation.Profile
+import org.springframework.stereotype.Component
 
 @Component("FCM_CLIENT")
 @Profile("!test")

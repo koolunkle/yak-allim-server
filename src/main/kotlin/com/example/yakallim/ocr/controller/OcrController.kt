@@ -1,14 +1,15 @@
-package com.example.yakallim.ocr
+package com.example.yakallim.ocr.controller
 
-import com.example.yakallim.ocr.service.N8nOcrService
-import com.example.yakallim.ocr.service.ProgressManager
-import com.example.yakallim.ocr.service.OcrService
-import com.example.yakallim.ocr.exception.OcrException
 import com.example.yakallim.ocr.config.OcrProperties
 import com.example.yakallim.ocr.dto.N8nCallbackRequest
 import com.example.yakallim.ocr.dto.OcrJobResponse
+import com.example.yakallim.ocr.exception.OcrException
+import com.example.yakallim.ocr.service.N8nOcrService
+import com.example.yakallim.ocr.service.OcrService
+import com.example.yakallim.ocr.service.ProgressManager
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -16,8 +17,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
-
-import org.slf4j.LoggerFactory
 
 @RestController
 @RequestMapping("/api/v1/ocr")

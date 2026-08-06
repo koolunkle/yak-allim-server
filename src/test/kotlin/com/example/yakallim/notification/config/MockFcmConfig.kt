@@ -1,6 +1,6 @@
 package com.example.yakallim.notification.config
 
-import com.example.yakallim.notification.NotificationClient
+import com.example.yakallim.notification.service.NotificationClient
 import com.google.firebase.messaging.FirebaseMessaging
 import org.mockito.Mockito
 import org.springframework.context.annotation.Bean
