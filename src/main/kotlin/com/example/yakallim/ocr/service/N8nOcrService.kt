@@ -5,7 +5,7 @@ import com.example.yakallim.ocr.model.PipelineStep
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import com.example.yakallim.ocr.engine.N8nOcrClient
 import com.example.yakallim.ocr.dto.OcrResponse
-import com.example.yakallim.ocr.dto.Prescription
+import com.example.yakallim.ocr.model.Prescription
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty

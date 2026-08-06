@@ -2,6 +2,7 @@ package com.example.yakallim.ocr.service
 
 import com.example.yakallim.ocr.exception.OcrException
 import com.example.yakallim.ocr.model.PipelineStep
+import com.example.yakallim.ocr.model.OcrJobStatus
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import com.example.yakallim.ocr.dto.OcrJobResponse
 import org.slf4j.Logger
@@ -87,7 +88,7 @@ abstract class OcrService(
         val job = ocrJobRepository.getJob(jobId)
             ?: throw OcrException.JobNotFoundException("존재하지 않는 작업ID: $jobId")
 
-        if (job.status == OcrJobResponse.JobStatus.COMPLETED || job.status == OcrJobResponse.JobStatus.FAILED) {
+        if (job.status == OcrJobStatus.COMPLETED || job.status == OcrJobStatus.FAILED) {
             throw OcrException.IllegalJobStateException("이미 종료된 작업은 취소할 수 없습니다. (작업ID: $jobId, 상태: ${job.status})")
         }
 

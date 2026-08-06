@@ -1,4 +1,4 @@
-package com.example.yakallim.ocr.dto
+package com.example.yakallim.ocr.model
 
 data class Prescription(
     val medicineName: String,

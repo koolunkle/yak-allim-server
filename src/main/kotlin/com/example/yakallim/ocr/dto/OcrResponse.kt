@@ -1,6 +1,7 @@
 package com.example.yakallim.ocr.dto
 
 import com.example.yakallim.ocr.model.TextBlock
+import com.example.yakallim.ocr.model.Prescription
 
 data class OcrResponse(
     val fileName: String,

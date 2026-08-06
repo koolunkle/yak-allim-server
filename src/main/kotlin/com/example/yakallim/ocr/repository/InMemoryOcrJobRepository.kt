@@ -1,8 +1,8 @@
 package com.example.yakallim.ocr.repository
 
-import com.example.yakallim.ocr.repository.OcrJobRepository
 import com.example.yakallim.ocr.dto.OcrJobResponse
 import com.example.yakallim.ocr.dto.OcrResponse
+import com.example.yakallim.ocr.model.OcrJobStatus
 import org.springframework.stereotype.Repository
 import java.util.concurrent.ConcurrentHashMap
 
@@ -12,20 +12,20 @@ class InMemoryOcrJobRepository : OcrJobRepository {
     private val jobRegistry = ConcurrentHashMap<String, OcrJobResponse>()
 
     override fun registerJob(jobId: String): OcrJobResponse =
-        OcrJobResponse(jobId = jobId, status = OcrJobResponse.JobStatus.ACCEPTED).also {
+        OcrJobResponse(jobId = jobId, status = OcrJobStatus.ACCEPTED).also {
             jobRegistry[jobId] = it
         }
 
     override fun updateToProcessing(jobId: String) {
-        updateJobStatus(jobId, OcrJobResponse.JobStatus.PROCESSING)
+        updateJobStatus(jobId, OcrJobStatus.PROCESSING)
     }
 
     override fun updateToCompleted(jobId: String, result: OcrResponse): Boolean {
         var transitionApplied = false
         jobRegistry.computeIfPresent(jobId) { _, existing ->
-            if (existing.status == OcrJobResponse.JobStatus.ACCEPTED || existing.status == OcrJobResponse.JobStatus.PROCESSING) {
+            if (existing.status == OcrJobStatus.ACCEPTED || existing.status == OcrJobStatus.PROCESSING) {
                 transitionApplied = true
-                existing.copy(status = OcrJobResponse.JobStatus.COMPLETED, result = result)
+                existing.copy(status = OcrJobStatus.COMPLETED, result = result)
             } else {
                 transitionApplied = false
                 existing
@@ -35,23 +35,23 @@ class InMemoryOcrJobRepository : OcrJobRepository {
     }
 
     override fun updateToFailed(jobId: String, errorMessage: String) {
-        updateJobStatus(jobId, OcrJobResponse.JobStatus.FAILED, error = errorMessage)
+        updateJobStatus(jobId, OcrJobStatus.FAILED, error = errorMessage)
     }
 
     override fun updateToCancelled(jobId: String) {
-        updateJobStatus(jobId, OcrJobResponse.JobStatus.CANCELLED)
+        updateJobStatus(jobId, OcrJobStatus.CANCELLED)
     }
 
     override fun getJob(jobId: String): OcrJobResponse? = jobRegistry[jobId]
 
-    override fun isCancelled(jobId: String): Boolean = jobRegistry[jobId]?.status == OcrJobResponse.JobStatus.CANCELLED
+    override fun isCancelled(jobId: String): Boolean = jobRegistry[jobId]?.status == OcrJobStatus.CANCELLED
 
     private fun updateJobStatus(
-        jobId: String, status: OcrJobResponse.JobStatus, result: OcrResponse? = null, error: String? = null
+        jobId: String, status: OcrJobStatus, result: OcrResponse? = null, error: String? = null
     ): Boolean {
         var transitionApplied = false
         jobRegistry.compute(jobId) { _, existing ->
-            if (existing?.status == OcrJobResponse.JobStatus.CANCELLED && status != OcrJobResponse.JobStatus.CANCELLED) {
+            if (existing?.status == OcrJobStatus.CANCELLED && status != OcrJobStatus.CANCELLED) {
                 transitionApplied = false
                 return@compute existing
             }

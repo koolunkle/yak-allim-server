@@ -1,6 +1,7 @@
 package com.example.yakallim.ocr.service
 
 import com.example.yakallim.ocr.model.PipelineStep
+import com.example.yakallim.ocr.model.OcrJobStatus
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import com.example.yakallim.ocr.dto.OcrJobResponse
 import com.example.yakallim.ocr.dto.OcrProgressResponse
@@ -50,20 +51,20 @@ class ProgressManager(
         val emitter = SseEmitter(timeoutMs)
 
         val job = ocrJobRepository.getJob(jobId)
-        if (job != null && (job.status == OcrJobResponse.JobStatus.COMPLETED ||
-                    job.status == OcrJobResponse.JobStatus.FAILED ||
-                    job.status == OcrJobResponse.JobStatus.CANCELLED)
+        if (job != null && (job.status == OcrJobStatus.COMPLETED ||
+                    job.status == OcrJobStatus.FAILED ||
+                    job.status == OcrJobStatus.CANCELLED)
         ) {
             val step = when (job.status) {
-                OcrJobResponse.JobStatus.COMPLETED -> PipelineStep.COMPLETED
-                OcrJobResponse.JobStatus.FAILED -> PipelineStep.FAILED
-                OcrJobResponse.JobStatus.CANCELLED -> PipelineStep.FAILED
+                OcrJobStatus.COMPLETED -> PipelineStep.COMPLETED
+                OcrJobStatus.FAILED -> PipelineStep.FAILED
+                OcrJobStatus.CANCELLED -> PipelineStep.FAILED
                 else -> PipelineStep.FAILED
             }
             val message = when (job.status) {
-                OcrJobResponse.JobStatus.COMPLETED -> job.result?.message ?: step.defaultMessage
-                OcrJobResponse.JobStatus.FAILED -> job.error ?: step.defaultMessage
-                OcrJobResponse.JobStatus.CANCELLED -> "작업이 취소되었습니다."
+                OcrJobStatus.COMPLETED -> job.result?.message ?: step.defaultMessage
+                OcrJobStatus.FAILED -> job.error ?: step.defaultMessage
+                OcrJobStatus.CANCELLED -> "작업이 취소되었습니다."
                 else -> step.defaultMessage
             }
             val payload = OcrProgressResponse(

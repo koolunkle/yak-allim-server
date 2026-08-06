@@ -1,5 +1,6 @@
 package com.example.yakallim.ocr.dto
 
+import com.example.yakallim.ocr.model.Prescription
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 

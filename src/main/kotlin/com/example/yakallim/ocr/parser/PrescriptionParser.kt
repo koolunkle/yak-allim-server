@@ -5,7 +5,7 @@ import com.example.yakallim.medicine.MedicineService
 import com.example.yakallim.ocr.model.BoundingBox
 import com.example.yakallim.ocr.model.TextBlock
 import com.example.yakallim.ocr.config.OcrProperties
-import com.example.yakallim.ocr.dto.Prescription
+import com.example.yakallim.ocr.model.Prescription
 import org.springframework.stereotype.Component
 import kotlin.math.abs
 import kotlin.math.atan2
