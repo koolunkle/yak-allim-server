@@ -82,7 +82,7 @@ class OcrController(
 
         val n8nOcrService = (ocrService as? N8nOcrService) ?: n8nOcrServiceProvider.ifAvailable
             ?: throw OcrException.IllegalJobStateException("n8n OCR 서비스가 활성화되어 있지 않습니다. 'ocr.type' 속성을 확인해주세요.")
-        n8nOcrService.handleCallback(jobId, request.data.prescriptions)
+        n8nOcrService.handleCallback(jobId, request.data.medicines)
         return ResponseEntity.ok().build()
     }
 }

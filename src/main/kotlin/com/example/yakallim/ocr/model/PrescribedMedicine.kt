@@ -1,6 +1,6 @@
 package com.example.yakallim.ocr.model
 
-data class Prescription(
+data class PrescribedMedicine(
     val medicineName: String,
     val dosagePerTake: String?,
     val dailyFrequency: Int?,

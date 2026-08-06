@@ -1,11 +1,11 @@
 package com.example.yakallim.ocr.service
 
 import com.example.yakallim.notification.NotificationClient
-import com.example.yakallim.ocr.model.PipelineStep
-import com.example.yakallim.ocr.repository.OcrJobRepository
+import com.example.yakallim.ocr.dto.OcrResultResponse
 import com.example.yakallim.ocr.engine.N8nOcrClient
-import com.example.yakallim.ocr.dto.OcrResponse
-import com.example.yakallim.ocr.model.Prescription
+import com.example.yakallim.ocr.model.OcrPipelineStep
+import com.example.yakallim.ocr.model.PrescribedMedicine
+import com.example.yakallim.ocr.repository.OcrJobRepository
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -40,12 +40,12 @@ class N8nOcrService(
         }
     }
 
-    fun handleCallback(jobId: String, prescriptions: List<Prescription>) {
-        val response = OcrResponse(
+    fun handleCallback(jobId: String, medicines: List<PrescribedMedicine>) {
+        val response = OcrResultResponse(
             fileName = "n8n_ocr_$jobId",
             message = "복약 안내서 분석이 완료되었습니다.\n복약 지침을 확인해 보세요.",
             textBlocks = emptyList(),
-            prescriptions = prescriptions
+            medicines = medicines
         )
 
         val transitionApplied = ocrJobRepository.updateToCompleted(jobId, response)
@@ -53,7 +53,7 @@ class N8nOcrService(
         val token = fcmTokenMap.remove(jobId)
 
         if (transitionApplied) {
-            ocrProgressManager.publishProgress(jobId, PipelineStep.COMPLETED, response.message)
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.COMPLETED, response.message)
 
             if (!token.isNullOrEmpty()) {
                 notifier.notify(

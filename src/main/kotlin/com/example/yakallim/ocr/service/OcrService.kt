@@ -1,7 +1,7 @@
 package com.example.yakallim.ocr.service
 
 import com.example.yakallim.ocr.exception.OcrException
-import com.example.yakallim.ocr.model.PipelineStep
+import com.example.yakallim.ocr.model.OcrPipelineStep
 import com.example.yakallim.ocr.model.OcrJobStatus
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import com.example.yakallim.ocr.dto.OcrJobResponse
@@ -67,7 +67,7 @@ abstract class OcrService(
         val jobId = UUID.randomUUID().toString()
         val job = ocrJobRepository.registerJob(jobId)
 
-        ocrProgressManager.publishProgress(jobId, PipelineStep.ENQUEUED)
+        ocrProgressManager.publishProgress(jobId, OcrPipelineStep.ACCEPTED)
 
         processJob(jobId, targetPath, uniqueFileName, fcmToken, delay)
 

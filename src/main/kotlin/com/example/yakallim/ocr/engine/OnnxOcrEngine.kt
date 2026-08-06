@@ -6,7 +6,7 @@ import ai.onnxruntime.OrtSession
 import com.example.yakallim.ocr.service.ProgressManager
 import com.example.yakallim.ocr.engine.OcrEngine
 import com.example.yakallim.ocr.model.BoundingBox
-import com.example.yakallim.ocr.model.PipelineStep
+import com.example.yakallim.ocr.model.OcrPipelineStep
 import com.example.yakallim.ocr.model.TextBlock
 import com.example.yakallim.ocr.config.OcrProperties
 import jakarta.annotation.PostConstruct
@@ -79,7 +79,7 @@ class OnnxOcrEngine(
             val sourceImage = ImageIO.read(imageStream) ?: throw IllegalArgumentException("유효하지 않은 이미지 스트림입니다.")
             
             if (jobId != null) {
-                ocrProgressManager.publishProgress(jobId, PipelineStep.TEXT_DETECTION)
+                ocrProgressManager.publishProgress(jobId, OcrPipelineStep.TEXT_DETECTION)
             }
             
             val detectedTextRegions = detectRegions(sourceImage)
@@ -101,7 +101,7 @@ class OnnxOcrEngine(
             }
             
             if (jobId != null) {
-                ocrProgressManager.publishProgress(jobId, PipelineStep.TEXT_RECOGNITION)
+                ocrProgressManager.publishProgress(jobId, OcrPipelineStep.TEXT_RECOGNITION)
             }
 
             runBlocking(Dispatchers.Default) {

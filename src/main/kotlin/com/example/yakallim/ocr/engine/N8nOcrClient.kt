@@ -3,7 +3,7 @@ package com.example.yakallim.ocr.engine
 import com.example.yakallim.notification.NotificationClient
 import com.example.yakallim.ocr.service.ErrorMessageResolver
 import com.example.yakallim.ocr.service.ProgressManager
-import com.example.yakallim.ocr.model.PipelineStep
+import com.example.yakallim.ocr.model.OcrPipelineStep
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import com.example.yakallim.ocr.config.OcrProperties
 import org.slf4j.LoggerFactory
@@ -33,7 +33,7 @@ class N8nOcrClient(
     @Async
     fun sendToN8nAsync(jobId: String, file: File, fcmToken: String?, onDispatchFailure: (String) -> Unit) {
         try {
-            ocrProgressManager.publishProgress(jobId, PipelineStep.IMAGE_PROCESSING)
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.IMAGE_PROCESSING)
 
             val uri = UriComponentsBuilder.fromUriString(ocrProperties.n8n.webhookUrl)
                 .queryParam("jobId", jobId)
@@ -56,16 +56,16 @@ class N8nOcrClient(
 
             val requestEntity = HttpEntity(body, headers)
 
-            ocrProgressManager.publishProgress(jobId, PipelineStep.TEXT_DETECTION)
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.TEXT_DETECTION)
             restTemplate.postForEntity<String>(uri, requestEntity)
 
-            ocrProgressManager.publishProgress(jobId, PipelineStep.TEXT_RECOGNITION)
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.TEXT_RECOGNITION)
         } catch (e: Exception) {
             log.error("Failed to send image to n8n", e)
             val rawErrorMessage = e.message ?: "Failed to connect to n8n"
             val userFacingMessage = ErrorMessageResolver.resolve(e)
             ocrJobRepository.updateToFailed(jobId, rawErrorMessage)
-            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, userFacingMessage)
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.FAILED, userFacingMessage)
 
             onDispatchFailure(jobId)
 

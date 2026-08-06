@@ -1,6 +1,6 @@
 package com.example.yakallim.ocr.service
 
-import com.example.yakallim.ocr.model.PipelineStep
+import com.example.yakallim.ocr.model.OcrPipelineStep
 import com.example.yakallim.ocr.model.OcrJobStatus
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import com.example.yakallim.ocr.dto.OcrJobResponse
@@ -56,10 +56,10 @@ class ProgressManager(
                     job.status == OcrJobStatus.CANCELLED)
         ) {
             val step = when (job.status) {
-                OcrJobStatus.COMPLETED -> PipelineStep.COMPLETED
-                OcrJobStatus.FAILED -> PipelineStep.FAILED
-                OcrJobStatus.CANCELLED -> PipelineStep.FAILED
-                else -> PipelineStep.FAILED
+                OcrJobStatus.COMPLETED -> OcrPipelineStep.COMPLETED
+                OcrJobStatus.FAILED -> OcrPipelineStep.FAILED
+                OcrJobStatus.CANCELLED -> OcrPipelineStep.FAILED
+                else -> OcrPipelineStep.FAILED
             }
             val message = when (job.status) {
                 OcrJobStatus.COMPLETED -> job.result?.message ?: step.defaultMessage
@@ -132,10 +132,10 @@ class ProgressManager(
         return emitter
     }
 
-    fun publishProgress(jobId: String, step: PipelineStep, message: String? = null, progress: Int? = null) {
+    fun publishProgress(jobId: String, step: OcrPipelineStep, message: String? = null, progress: Int? = null) {
         val finalMessage = message ?: step.defaultMessage
         val finalProgress = progress ?: step.defaultProgress
-        val isFinished = step == PipelineStep.COMPLETED || step == PipelineStep.FAILED
+        val isFinished = step == OcrPipelineStep.COMPLETED || step == OcrPipelineStep.FAILED
 
         val payload = OcrProgressResponse(
             step = step,

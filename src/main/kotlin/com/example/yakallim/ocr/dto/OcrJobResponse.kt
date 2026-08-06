@@ -5,6 +5,6 @@ import com.example.yakallim.ocr.model.OcrJobStatus
 data class OcrJobResponse(
     val jobId: String,
     val status: OcrJobStatus,
-    val result: OcrResponse? = null,
+    val result: OcrResultResponse? = null,
     val error: String? = null
 )

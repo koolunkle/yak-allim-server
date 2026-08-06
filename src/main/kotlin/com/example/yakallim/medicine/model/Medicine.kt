@@ -14,7 +14,7 @@ class Medicine(
     var name: String = ""
 ) {
     @Column(name = "normalized_name", nullable = false)
-    var normalizedName: String = ""
+    var normalizedName: String = HangulUtils.normalizeToJamo(name)
 
     @PrePersist
     @PreUpdate

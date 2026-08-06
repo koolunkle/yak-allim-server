@@ -5,7 +5,7 @@ import com.example.yakallim.medicine.MedicineService
 import com.example.yakallim.ocr.model.BoundingBox
 import com.example.yakallim.ocr.model.TextBlock
 import com.example.yakallim.ocr.config.OcrProperties
-import com.example.yakallim.ocr.model.Prescription
+import com.example.yakallim.ocr.model.PrescribedMedicine
 import org.springframework.stereotype.Component
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -37,7 +37,7 @@ class PrescriptionParser(
         private val DOSING_FORM_UNIT_JAMO_MAP = setOf("정", "캡슐").associateWith { HangulUtils.normalizeToJamo(it) }
     }
 
-    fun parse(textBlocks: List<TextBlock>): List<Prescription> {
+    fun parse(textBlocks: List<TextBlock>): List<PrescribedMedicine> {
         if (textBlocks.isEmpty()) return emptyList()
 
         val tiltAngle = calculateTiltAngle(textBlocks)
@@ -77,11 +77,11 @@ class PrescriptionParser(
             val dosing = extractDosing(guideBlock.text)
 
             val bounds = listOfNotNull(
-                matchedName?.bounds?.map { Prescription.Coordinate(it.x, it.y) }?.let { Prescription.Polygon(it) },
-                guideBlock.bounds.map { Prescription.Coordinate(it.x, it.y) }.let { Prescription.Polygon(it) }
+                matchedName?.bounds?.map { PrescribedMedicine.Coordinate(it.x, it.y) }?.let { PrescribedMedicine.Polygon(it) },
+                guideBlock.bounds.map { PrescribedMedicine.Coordinate(it.x, it.y) }.let { PrescribedMedicine.Polygon(it) }
             )
 
-            Prescription(
+            PrescribedMedicine(
                 standardName, dosing.dosagePerTake, dosing.dailyFrequency, dosing.durationDays, bounds
             )
         }

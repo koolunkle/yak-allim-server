@@ -1,14 +1,14 @@
 package com.example.yakallim.ocr.service
 
 import com.example.yakallim.notification.NotificationClient
+import com.example.yakallim.ocr.dto.OcrResultResponse
 import com.example.yakallim.ocr.engine.OcrEngine
-import com.example.yakallim.ocr.model.PipelineStep
-import com.example.yakallim.ocr.repository.OcrJobRepository
+import com.example.yakallim.ocr.model.OcrPipelineStep
 import com.example.yakallim.ocr.parser.PrescriptionParser
-import com.example.yakallim.ocr.dto.OcrResponse
+import com.example.yakallim.ocr.repository.OcrJobRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import org.springframework.util.StopWatch
@@ -41,7 +41,6 @@ class JobProcessor(
             throw SecurityException("Access denied: Invalid file path.")
         }
 
-
         delay?.takeIf { it > 0 }?.let {
             try {
                 Thread.sleep(it)
@@ -52,12 +51,12 @@ class JobProcessor(
 
         if (ocrJobRepository.isCancelled(jobId)) {
             log.info("OCR job cancelled before processing: jobId='{}'", jobId)
-            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, "작업이 취소되었습니다.")
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.FAILED, "작업이 취소되었습니다.")
             return
         }
 
         ocrJobRepository.updateToProcessing(jobId)
-        ocrProgressManager.publishProgress(jobId, PipelineStep.IMAGE_PROCESSING)
+        ocrProgressManager.publishProgress(jobId, OcrPipelineStep.IMAGE_PROCESSING)
 
         val stopwatch = StopWatch(jobId)
 
@@ -70,26 +69,26 @@ class JobProcessor(
 
             check(!ocrJobRepository.isCancelled(jobId)) { "구조화 파싱 전 취소됨" }
 
-            ocrProgressManager.publishProgress(jobId, PipelineStep.EXPORT_RESULT)
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.PARSING)
 
             stopwatch.start("구조화 파싱")
-            val prescriptions = prescriptionParser.parse(textBlocks)
+            val medicines = prescriptionParser.parse(textBlocks)
             stopwatch.stop()
 
             log.info("\n${stopwatch.prettyPrint()}")
 
-            val response = OcrResponse(
+            val response = OcrResultResponse(
                 fileName = fileName,
                 message = "복약 안내서 분석이 완료되었습니다.\n복약 지침을 확인해 보세요.",
                 textBlocks = textBlocks,
-                prescriptions = prescriptions
+                medicines = medicines
             )
 
-            ocrProgressManager.publishProgress(jobId, PipelineStep.COMPLETED, response.message)
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.COMPLETED, response.message)
             ocrJobRepository.updateToCompleted(jobId, response)
 
             log.info("Prescription OCR processing completed: {}", fileName)
-            prescriptions.forEachIndexed { idx, item ->
+            medicines.forEachIndexed { idx, item ->
                 log.info(
                     "  [{}] 약품명: '{}', 복용량: '{}', 하루 횟수: '{}회', 복용 기간: '{}일'",
                     idx, item.medicineName, item.dosagePerTake, item.dailyFrequency, item.durationDays
@@ -106,12 +105,12 @@ class JobProcessor(
             )
         } catch (e: IllegalStateException) {
             log.info("OCR job cancelled: jobId='{}', reason='{}'", jobId, e.message)
-            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, "작업이 취소되었습니다.")
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.FAILED, "작업이 취소되었습니다.")
         } catch (e: Exception) {
             val rawErrorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."
             val userFacingMessage = ErrorMessageResolver.resolve(e)
             log.error("Async OCR processing failed for file: {}", fileName, e)
-            ocrProgressManager.publishProgress(jobId, PipelineStep.FAILED, userFacingMessage)
+            ocrProgressManager.publishProgress(jobId, OcrPipelineStep.FAILED, userFacingMessage)
             ocrJobRepository.updateToFailed(jobId, rawErrorMessage)
             notifier.notify(
                 token = token ?: "",
