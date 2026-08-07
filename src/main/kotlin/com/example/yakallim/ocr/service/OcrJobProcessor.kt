@@ -24,7 +24,7 @@ class OcrJobProcessor(
     private val prescriptionParser: PrescriptionParser,
     @param:Qualifier("FCM_CLIENT") private val notifier: PushNotificationClient,
     private val ocrProgressManager: OcrProgressManager,
-    @Value("\${ocr.upload-dir:outputs/api-images}") private val uploadDirStr: String
+    @param:Value("\${ocr.upload-dir:outputs/api-images}") private val uploadDirStr: String
 ) {
     private val log = LoggerFactory.getLogger(OcrJobProcessor::class.java)
     private val baseDir = Paths.get(uploadDirStr).toAbsolutePath().normalize()
