@@ -1,6 +1,5 @@
 package com.example.yakallim.ocr.dto
 
-import com.example.yakallim.ocr.model.PrescribedMedicine
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 
@@ -10,8 +9,4 @@ data class N8nCallbackRequest(
     val status: String?,
     @field:Valid
     val data: N8nData
-) {
-    data class N8nData(
-        val medicines: List<PrescribedMedicine> = emptyList()
-    )
-}
+)
