@@ -26,6 +26,7 @@ val guavaVersion: String by project
 val protobufVersion: String by project
 val grpcVersion: String by project
 val springdocVersion: String by project
+val ktorVersion: String by project
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -41,6 +42,9 @@ dependencies {
     implementation("com.microsoft.onnxruntime:onnxruntime:$onnxruntimeVersion")
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
+
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
 
     kapt("org.springframework.boot:spring-boot-configuration-processor")
 
