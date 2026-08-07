@@ -1,8 +1,8 @@
 package com.example.yakallim.ocr.service
 
 import com.example.yakallim.ocr.dto.OcrProgressResponse
-import com.example.yakallim.ocr.model.OcrJobStatus
-import com.example.yakallim.ocr.model.OcrPipelineStep
+import com.example.yakallim.ocr.model.JobStatus
+import com.example.yakallim.ocr.model.PipelineStep
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
@@ -54,20 +54,20 @@ class OcrProgressManager(
         val emitter = SseEmitter(timeoutMs)
 
         val job = ocrJobRepository.getJob(jobId)
-        if (job != null && (job.status == OcrJobStatus.COMPLETED ||
-                    job.status == OcrJobStatus.FAILED ||
-                    job.status == OcrJobStatus.CANCELLED)
+        if (job != null && (job.status == JobStatus.COMPLETED ||
+                    job.status == JobStatus.FAILED ||
+                    job.status == JobStatus.CANCELLED)
         ) {
             val step = when (job.status) {
-                OcrJobStatus.COMPLETED -> OcrPipelineStep.COMPLETED
-                OcrJobStatus.FAILED -> OcrPipelineStep.FAILED
-                OcrJobStatus.CANCELLED -> OcrPipelineStep.FAILED
-                else -> OcrPipelineStep.FAILED
+                JobStatus.COMPLETED -> PipelineStep.COMPLETED
+                JobStatus.FAILED -> PipelineStep.FAILED
+                JobStatus.CANCELLED -> PipelineStep.FAILED
+                else -> PipelineStep.FAILED
             }
             val message = when (job.status) {
-                OcrJobStatus.COMPLETED -> job.result?.message ?: step.defaultMessage
-                OcrJobStatus.FAILED -> job.error ?: step.defaultMessage
-                OcrJobStatus.CANCELLED -> "작업이 취소되었습니다."
+                JobStatus.COMPLETED -> job.result?.message ?: step.defaultMessage
+                JobStatus.FAILED -> job.error ?: step.defaultMessage
+                JobStatus.CANCELLED -> "작업이 취소되었습니다."
                 else -> step.defaultMessage
             }
             val payload = OcrProgressResponse(
@@ -135,10 +135,10 @@ class OcrProgressManager(
         return emitter
     }
 
-    fun publishProgress(jobId: String, step: OcrPipelineStep, message: String? = null, progress: Int? = null) {
+    fun publishProgress(jobId: String, step: PipelineStep, message: String? = null, progress: Int? = null) {
         val finalMessage = message ?: step.defaultMessage
         val finalProgress = progress ?: step.defaultProgress
-        val isFinished = step == OcrPipelineStep.COMPLETED || step == OcrPipelineStep.FAILED
+        val isFinished = step == PipelineStep.COMPLETED || step == PipelineStep.FAILED
 
         val payload = OcrProgressResponse(
             step = step,

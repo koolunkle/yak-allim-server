@@ -1,10 +1,10 @@
 package com.example.yakallim.ocr.dto
 
-import com.example.yakallim.ocr.model.OcrJobStatus
+import com.example.yakallim.ocr.model.JobStatus
 
 data class OcrJobResponse(
     val jobId: String,
-    val status: OcrJobStatus,
-    val result: OcrResultResponse? = null,
+    val status: JobStatus,
+    val result: OcrResponse? = null,
     val error: String? = null
 )

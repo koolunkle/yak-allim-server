@@ -1,6 +1,6 @@
 package com.example.yakallim.ocr.model
 
-enum class OcrPipelineStep(val defaultMessage: String, val defaultProgress: Int) {
+enum class PipelineStep(val defaultMessage: String, val defaultProgress: Int) {
     ACCEPTED("작업이 대기열에 등록되었습니다.", 5),
     IMAGE_PROCESSING("이미지 전처리 중...", 15),
     TEXT_DETECTION("텍스트 영역 검출 중...", 35),

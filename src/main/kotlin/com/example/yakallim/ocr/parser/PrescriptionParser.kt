@@ -3,9 +3,11 @@ package com.example.yakallim.ocr.parser
 import com.example.yakallim.global.utils.HangulUtils
 import com.example.yakallim.medicine.service.MedicineService
 import com.example.yakallim.ocr.config.OcrProperties
-import com.example.yakallim.ocr.model.OcrBoundingBox
-import com.example.yakallim.ocr.model.OcrTextBlock
+import com.example.yakallim.ocr.model.BoundingBox
+import com.example.yakallim.ocr.model.Point
+import com.example.yakallim.ocr.model.Polygon
 import com.example.yakallim.ocr.model.PrescribedMedicine
+import com.example.yakallim.ocr.model.TextBlock
 import org.springframework.stereotype.Component
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -37,18 +39,18 @@ class PrescriptionParser(
         private val DOSING_FORM_UNIT_JAMO_MAP = setOf("정", "캡슐").associateWith { HangulUtils.normalizeToJamo(it) }
     }
 
-    fun parse(textBlocks: List<OcrTextBlock>): List<PrescribedMedicine> {
+    fun parse(textBlocks: List<TextBlock>): List<PrescribedMedicine> {
         if (textBlocks.isEmpty()) return emptyList()
 
         val tiltAngle = calculateTiltAngle(textBlocks)
         val deskewed = if (abs(tiltAngle) > 1e-4) {
             val coordinates = textBlocks.flatMap { it.bounds }
-            val boundingBox = OcrBoundingBox.from(coordinates)
+            val boundingBox = BoundingBox.from(coordinates)
             val centerX = boundingBox.centerX.toDouble()
             val centerY = boundingBox.centerY.toDouble()
 
             textBlocks.map { result ->
-                OcrTextBlock(
+                TextBlock(
                     text = result.text,
                     confidence = result.confidence,
                     bounds = rotate(result.bounds, -tiltAngle, centerX, centerY)
@@ -77,8 +79,8 @@ class PrescriptionParser(
             val dosing = extractDosing(guideBlock.text)
 
             val bounds = listOfNotNull(
-                matchedName?.bounds?.map { PrescribedMedicine.Coordinate(it.x, it.y) }?.let { PrescribedMedicine.Polygon(it) },
-                guideBlock.bounds.map { PrescribedMedicine.Coordinate(it.x, it.y) }.let { PrescribedMedicine.Polygon(it) }
+                matchedName?.bounds?.let { Polygon(it) },
+                Polygon(guideBlock.bounds)
             )
 
             PrescribedMedicine(
@@ -237,7 +239,7 @@ class PrescriptionParser(
         return if (match != null && match.second <= DOSING_UNIT_DIST_THRESHOLD) match.first else null
     }
 
-    private fun calculateTiltAngle(textBlocks: List<OcrTextBlock>): Double {
+    private fun calculateTiltAngle(textBlocks: List<TextBlock>): Double {
         val angles = textBlocks.mapNotNull { block ->
             val box = block.bounds
             if (box.size == 4) {
@@ -250,8 +252,8 @@ class PrescriptionParser(
     }
 
     private fun rotate(
-        coordinates: List<OcrTextBlock.Coordinate>, tiltAngleRadian: Double, centerX: Double, centerY: Double
-    ): List<OcrTextBlock.Coordinate> {
+        coordinates: List<Point>, tiltAngleRadian: Double, centerX: Double, centerY: Double
+    ): List<Point> {
         val cosValue = cos(tiltAngleRadian)
         val sinValue = sin(tiltAngleRadian)
         return coordinates.map { point ->
@@ -259,7 +261,7 @@ class PrescriptionParser(
             val dy = point.y - centerY
             val rotatedX = dx * cosValue - dy * sinValue + centerX
             val rotatedY = dx * sinValue + dy * cosValue + centerY
-            OcrTextBlock.Coordinate(rotatedX.toInt(), rotatedY.toInt())
+            Point(rotatedX.toInt(), rotatedY.toInt())
         }
     }
 
@@ -329,10 +331,10 @@ class PrescriptionParser(
         val mergedMaxY = maxOf(currentBox.maxY, targetBox.maxY)
 
         val mergedBoundingBox = listOf(
-            OcrTextBlock.Coordinate(mergedMinX, mergedMinY),
-            OcrTextBlock.Coordinate(mergedMaxX, mergedMinY),
-            OcrTextBlock.Coordinate(mergedMaxX, mergedMaxY),
-            OcrTextBlock.Coordinate(mergedMinX, mergedMaxY)
+            Point(mergedMinX, mergedMinY),
+            Point(mergedMaxX, mergedMinY),
+            Point(mergedMaxX, mergedMaxY),
+            Point(mergedMinX, mergedMaxY)
         )
 
         val mergedText = if (targetBox.minX >= currentBox.maxX) {
@@ -352,10 +354,10 @@ class PrescriptionParser(
 private data class TextSegment(
     val text: String,
     val confidence: Float,
-    val bounds: List<OcrTextBlock.Coordinate>,
+    val bounds: List<Point>,
     val normalizedName: String = HangulUtils.normalizeToJamo(text)
 ) {
-    val box: OcrBoundingBox = OcrBoundingBox.from(bounds)
+    val box: BoundingBox = BoundingBox.from(bounds)
 }
 
 private data class DosingToken(

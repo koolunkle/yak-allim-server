@@ -1,6 +1,6 @@
 package com.example.yakallim.ocr.model
 
-enum class OcrJobStatus {
+enum class JobStatus {
     ACCEPTED,
     PROCESSING,
     COMPLETED,

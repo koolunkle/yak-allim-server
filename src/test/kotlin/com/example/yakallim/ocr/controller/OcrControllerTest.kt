@@ -1,7 +1,7 @@
 package com.example.yakallim.ocr.controller
 
 import com.example.yakallim.ocr.dto.OcrJobResponse
-import com.example.yakallim.ocr.model.OcrJobStatus
+import com.example.yakallim.ocr.model.JobStatus
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions
@@ -50,7 +50,7 @@ class OcrControllerTest {
 
         val updatedResponse = objectMapper.readValue(statusResult.response.contentAsString, OcrJobResponse::class.java)
 
-        Assertions.assertEquals(OcrJobStatus.CANCELLED, updatedResponse.status)
+        Assertions.assertEquals(JobStatus.CANCELLED, updatedResponse.status)
         Assertions.assertTrue(ocrJobRepository.isCancelled(jobId))
     }
 

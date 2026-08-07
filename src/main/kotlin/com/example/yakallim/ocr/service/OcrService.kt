@@ -2,7 +2,7 @@ package com.example.yakallim.ocr.service
 
 import com.example.yakallim.ocr.dto.OcrJobResponse
 import com.example.yakallim.ocr.exception.OcrException
-import com.example.yakallim.ocr.model.OcrPipelineStep
+import com.example.yakallim.ocr.model.PipelineStep
 import com.example.yakallim.ocr.repository.OcrJobRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -66,7 +66,7 @@ abstract class OcrService(
         val jobId = UUID.randomUUID().toString()
         val job = ocrJobRepository.registerJob(jobId)
 
-        ocrProgressManager.publishProgress(jobId, OcrPipelineStep.ACCEPTED)
+        ocrProgressManager.publishProgress(jobId, PipelineStep.ACCEPTED)
 
         processJob(jobId, targetPath, uniqueFileName, fcmToken, delay)
 
@@ -87,7 +87,7 @@ abstract class OcrService(
         val job = ocrJobRepository.getJob(jobId)
             ?: throw OcrException.JobNotFoundException("존재하지 않는 작업ID: $jobId")
 
-        if (job.status == com.example.yakallim.ocr.model.OcrJobStatus.COMPLETED || job.status == com.example.yakallim.ocr.model.OcrJobStatus.FAILED) {
+        if (job.status == com.example.yakallim.ocr.model.JobStatus.COMPLETED || job.status == com.example.yakallim.ocr.model.JobStatus.FAILED) {
             throw OcrException.IllegalJobStateException("이미 종료된 작업은 취소할 수 없습니다. (작업ID: $jobId, 상태: ${job.status})")
         }
 
